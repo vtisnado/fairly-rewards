@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Business · Fairly backoffice prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/base.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/setup.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+  .field { height: 44px; width: 100%; padding: 0 14px; border-radius: 8px; border: 1px solid #E5E3DE; background: #fff; outline: none; transition: border-color .15s, box-shadow .15s; }
+  .field:focus, .field.is-open { border-color: #1C1B1F; box-shadow: 0 0 0 3px rgba(28,27,31,.08); }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  input[type=range] { accent-color: var(--brand); }
+  .toggle { width: 40px; height: 22px; border-radius: 11px; background: #D9D6D0; position: relative; transition: background .2s; flex-shrink: 0; }
+  .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .2s; }
+  .toggle.on { background: var(--brand); } .toggle.on::after { left: 21px; }
+  .menu { position: absolute; z-index: 40; margin-top: 6px; background: #fff; border: 1px solid #E5E3DE; border-radius: 10px; box-shadow: 0 16px 40px -16px rgba(0,0,0,.25); padding: 6px; }
+  .menu-item { width: 100%; height: 36px; padding: 0 10px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; gap: 10px; text-align: left; font-size: 14px; }
+  .menu-item:hover { background: #F4F4F2; }
+  .cal-day { height: 34px; border-radius: 6px; font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+  .cal-day:hover:not(:disabled) { background: #F4F4F2; }
+  .cal-day.sel { background: var(--brand); color: var(--brand-ink); }
+  .cal-day.in { background: color-mix(in srgb, var(--brand) 16%, white); border-radius: 0; }
+  .live-in { animation: livein .45s cubic-bezier(.2,.9,.3,1.15) both; }
+  @keyframes livein { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .row-flash { animation: rowflash 2s ease; }
+  @keyframes rowflash { 0% { background: color-mix(in srgb, var(--brand) 18%, white); } 100% { background: transparent; } }
+</style>
+</head>
+<body class="bg-bo-bg font-sans text-bo-text">
+<div x-data="bo()" class="min-h-screen flex" :style="`--brand:${color};--brand-ink:${readable(color)}`">
+
+  <!-- ================= SIDEBAR (collapsible) ================= -->
+  <aside class="shrink-0 bg-white border-r border-bo-line flex flex-col sticky top-0 h-screen transition-all duration-300 z-30" :class="mini ? 'w-[68px]' : 'w-64'">
+    <div class="relative h-16 flex items-center border-b border-bo-line" :class="mini ? 'justify-center' : 'px-5 gap-2'">
+      <button @click="mini=!mini" class="absolute top-1/2 -translate-y-1/2 w-7 h-7 rounded-md border border-bo-line bg-white text-bo-muted hover:text-bo-text hover:border-bo-muted grid place-items-center transition z-10" :class="mini ? '-right-3.5 shadow-sm' : 'right-3'" :title="mini ? 'Expand sidebar' : 'Collapse sidebar'"><span class="transition" :class="mini ? '-rotate-90' : 'rotate-90'" x-html="icon('chevron','w-4 h-4')"></span></button>
+      <span x-html="coin('w-7 h-7')"></span>
+      <template x-if="!mini"><span class="flex items-center gap-2"><span class="text-xl font-extrabold tracking-tight" x-text="BRAND"></span><span class="text-xs font-semibold text-bo-muted">Business</span></span></template>
+    </div>
+    <div class="p-3">
+      <div class="flex items-center gap-3 p-2 rounded-lg border border-bo-line" :class="mini && 'justify-center p-1.5'">
+        <span class="w-9 h-9 shrink-0 rounded-md grid place-items-center overflow-hidden" :style="{background:color,color:readable(color)}"><template x-if="logo"><img :src="logo" class="w-full h-full object-cover"></template><template x-if="!logo"><span x-html="icon(typeIcon(),'w-5 h-5')"></span></template></span>
+        <div x-show="!mini" class="min-w-0"><p class="text-sm font-bold truncate" x-text="name"></p><p class="text-xs text-bo-muted" x-text="locations.length + ' locations'"></p></div>
+      </div>
+    </div>
+    <nav class="px-3 space-y-0.5 text-sm font-semibold">
+      <template x-for="n in nav"><button @click="view=n[0]; drawer=null" class="group relative w-full h-10 rounded-lg flex items-center gap-3 transition" :class="[view===n[0] ? 'bg-bo-bg text-bo-text' : 'text-bo-muted hover:bg-bo-bg hover:text-bo-text', mini ? 'justify-center' : 'px-3']">
+        <span class="relative" x-html="icon(n[2],'w-[18px] h-[18px]')"></span>
+        <span x-show="n[0]==='funds' && runway().level!=='ok'" class="absolute w-2 h-2 rounded-full bg-red-600" :class="mini ? 'top-2 right-3' : 'top-2 left-6'"></span>
+        <span x-show="!mini" x-text="n[1]"></span>
+        <span x-show="!mini && n[0]==='setup' && setupStep<=5" class="ml-auto text-[11px] mono text-bo-muted" x-text="Math.min(setupStep,5)+'/5'"></span>
+        <span x-show="mini" class="pointer-events-none absolute left-full ml-3 px-2.5 py-1.5 rounded-md bg-bo-text text-white text-xs font-semibold whitespace-nowrap opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition" x-text="n[1]"></span>
+      </button></template>
+    </nav>
+    <div class="mt-auto border-t border-bo-line" :class="mini ? 'p-2' : 'p-4'">
+      <div x-show="!mini">
+        <div class="flex items-center justify-between text-sm"><span class="text-bo-muted">Rewards money</span><span class="mono font-bold" :class="runway().level==='ok' ? '' : 'text-red-600'" x-text="money(pool)"></span></div>
+        <div class="h-1.5 rounded-full bg-bo-bg mt-2"><div class="h-full rounded-full" :style="{width:Math.min(100,pool/250*100)+'%', background: runway().color}"></div></div>
+        <p class="mt-3 text-xs text-bo-muted">cornercafe.testnet <span class="demo">(demo · test money)</span></p>
+      </div>
+    </div>
+  </aside>
+
+  <main class="flex-1 min-w-0">
+    <!-- Low balance alert: shown on every screen until the business tops up -->
+    <div x-show="runway().level!=='ok'" x-cloak class="sticky top-0 z-30 px-8 py-3 flex items-center gap-4 text-white" :class="runway().level==='empty' ? 'bg-red-700' : 'bg-red-600'">
+      <span class="w-9 h-9 rounded-lg bg-white/15 grid place-items-center" x-html="icon('bell','w-5 h-5')"></span>
+      <p class="flex-1 text-sm"><b x-text="runway().level==='empty' ? 'Rewards money is empty.' : 'Rewards money runs out in about ' + runway().days + ' days.'"></b>
+        <span class="text-white/85" x-text="runway().level==='empty' ? ' Purchases still count, but cashback is on hold. Customers see it as pending until you top up.' : ' Top up now so customers keep earning without a pause.'"></span></p>
+      <button @click="view='funds'" class="h-9 px-4 rounded-lg bg-white text-red-700 text-sm font-bold hover:bg-red-50 transition">Top up</button>
+    </div>
+
+    <!-- ================= SETUP ================= -->
+    <section x-show="view==='setup'" class="p-8 grid xl:grid-cols-[1fr_380px] gap-8 items-start">
+      <div class="bg-white border border-bo-line rounded-xl">
+        <div class="px-8 pt-6 border-b border-bo-line">
+          <h1 class="text-2xl font-bold">Set up your program</h1>
+          <div class="flex gap-6 mt-5 text-sm font-semibold overflow-x-auto">
+            <template x-for="(s,i) in steps"><button @click="setupStep=i+1" class="pb-3 border-b-2 flex items-center gap-2 transition whitespace-nowrap" :class="setupStep===i+1 ? 'border-bo-text text-bo-text' : 'border-transparent text-bo-muted hover:text-bo-text'">
+              <span class="w-6 h-6 rounded-full grid place-items-center text-xs" :class="setupStep>i+1 ? '' : (setupStep===i+1 ? 'bg-bo-text text-white' : 'bg-bo-bg')" :style="setupStep>i+1 ? {background:color,color:readable(color)} : {}" x-html="setupStep>i+1 ? icon('check','w-3.5 h-3.5') : i+1"></span><span x-text="s"></span></button></template>
+          </div>
+        </div>
+
+        <div class="p-8 min-h-[540px]">
+          <!-- 1 BRAND -->
+          <div x-show="setupStep===1" class="space-y-6 max-w-2xl">
+            <div class="grid md:grid-cols-2 gap-4">
+              <label class="block"><span class="text-sm font-semibold">Business name</span><input x-model="name" class="field mt-1.5"></label>
+              <label class="block"><span class="text-sm font-semibold">Card name</span><input x-model="cardName" class="field mt-1.5"></label>
+            </div>
+            <div><span class="text-sm font-semibold">Type of business</span>
+              <div class="grid grid-cols-4 md:grid-cols-7 gap-2 mt-1.5">
+                <template x-for="t in types"><button @click="type=t[0]" class="h-20 rounded-lg border flex flex-col items-center justify-center gap-1.5 text-xs font-semibold transition" :class="type===t[0] ? 'border-bo-text bg-bo-bg' : 'border-bo-line hover:border-bo-muted'"><span x-html="icon(t[1],'w-6 h-6')"></span><span x-text="t[0]"></span></button></template>
+              </div></div>
+            <div><span class="text-sm font-semibold">Brand color</span>
+              <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                <template x-for="c in presets"><button @click="color=c[1]" :title="c[0]" class="w-9 h-9 rounded-lg ring-offset-2 transition hover:scale-105" :class="color.toLowerCase()===c[1].toLowerCase() ? 'ring-2 ring-bo-text' : ''" :style="{background:c[1]}"></button></template>
+                <span class="w-px h-8 bg-bo-line mx-1"></span>
+                <label class="relative w-9 h-9 rounded-lg overflow-hidden cursor-pointer ring-1 ring-bo-line hover:scale-105 transition" title="Custom color" style="background:conic-gradient(#E94B3C,#F2C14E,#5CB270,#3A8DDE,#8A63D2,#E94B3C)"><input type="color" x-model="color" class="absolute inset-0 opacity-0 cursor-pointer"></label>
+                <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 rounded" :style="{background:color}"></span><input x-model="color" class="field mono !w-32 !h-9 !pl-9 uppercase text-sm"></div>
+              </div>
+              <p class="text-xs text-bo-muted mt-2" x-text="(presets.find(p=>p[1].toLowerCase()===color.toLowerCase())||['Custom'])[0]"></p></div>
+            <div><span class="text-sm font-semibold">Logo</span>
+              <label class="mt-1.5 flex items-center gap-4 p-4 rounded-lg border border-dashed border-bo-line hover:border-bo-muted cursor-pointer transition">
+                <span class="w-14 h-14 rounded-lg bg-bo-bg grid place-items-center overflow-hidden"><template x-if="logo"><img :src="logo" class="w-full h-full object-cover"></template><template x-if="!logo"><span class="text-bo-muted" x-html="icon('upload','w-6 h-6')"></span></template></span>
+                <span><span class="block font-semibold text-sm">Upload a square logo</span><span class="block text-xs text-bo-muted">PNG or SVG, 512 × 512 px or larger</span></span>
+                <input type="file" accept="image/*" class="hidden" @change="readLogo($event)">
+              </label></div>
+          </div>
+
+          <!-- 2 REWARDS -->
+          <div x-show="setupStep===2" x-cloak class="space-y-6 max-w-2xl">
+            <div class="p-5 rounded-lg border border-bo-line">
+              <div class="flex items-end justify-between"><div><p class="font-semibold">Base cashback</p><p class="text-sm text-bo-muted">Applies to every purchase. Boosts can raise it for a season.</p></div><p class="text-4xl font-extrabold mono" x-text="cashback+'%'"></p></div>
+              <input type="range" min="1" max="25" x-model.number="cashback" class="w-full mt-4">
+              <div class="flex justify-between text-xs text-bo-muted mono"><span>1%</span><span>25%</span></div>
+              <p class="mt-3 text-sm">A <b>$10.00</b> purchase gives <b x-text="money(10*cashback/100)"></b> back.</p>
+            </div>
+            <div><p class="font-semibold">Levels and perks</p>
+              <table class="w-full mt-2 text-sm border border-bo-line rounded-lg overflow-hidden">
+                <thead class="bg-bo-bg text-bo-muted text-left"><tr><th class="p-3 font-semibold">Level</th><th class="p-3 font-semibold">Visits</th><th class="p-3 font-semibold">Perk</th></tr></thead>
+                <tbody><template x-for="t in levels"><tr class="border-t border-bo-line">
+                  <td class="p-3"><span class="inline-flex items-center gap-2 font-semibold"><span class="w-3 h-3 rounded-sm" :style="{background:t.color}"></span><span x-text="t.name"></span></span></td>
+                  <td class="p-3 w-28"><input type="number" x-model.number="t.min" class="field !h-9 mono"></td>
+                  <td class="p-3"><input x-model="t.perk" class="field !h-9"></td></tr></template></tbody>
+              </table></div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><span class="text-sm font-semibold">Unused balance returns after</span>
+                <div class="relative mt-1.5" x-data="select(['90 days','180 days','1 year','Never'])" x-modelable="value" x-model="expiry" @click.outside="open=false">
+                  <button @click="open=!open" class="field flex items-center justify-between" :class="open && 'is-open'"><span x-text="label()"></span><span class="transition" :class="open && 'rotate-180'" x-html="icon('chevron','w-4 h-4')"></span></button>
+                  <div x-show="open" x-transition.origin.top class="menu w-full"><template x-for="o in options"><button @click="pick(o)" class="menu-item"><span x-text="o"></span><span x-show="o===value" x-html="icon('check','w-4 h-4')"></span></button></template></div>
+                </div></div>
+              <label class="block"><span class="text-sm font-semibold">Your share of card resales</span><div class="flex items-center gap-3 mt-1.5 h-11"><input type="range" min="0" max="15" x-model.number="royalty" class="flex-1"><span class="mono font-bold w-12 text-right" x-text="royalty+'%'"></span></div></label>
+            </div>
+          </div>
+
+          <!-- 3 BOOSTS -->
+          <div x-show="setupStep===3" x-cloak class="space-y-4 max-w-2xl">
+            <p class="text-sm text-bo-muted">Raise cashback for a date range or a recurring slow day. Boosts add to the base rate (max 25%) and stop on their own.</p>
+            <template x-for="b in boosts"><div class="p-4 rounded-lg border border-bo-line flex items-center gap-4">
+              <span class="w-11 h-11 rounded-lg grid place-items-center" :style="{background: b.on ? color : '#F4F4F2', color: b.on ? readable(color) : '#6E6B73'}" x-html="icon('calendar','w-5 h-5')"></span>
+              <div class="flex-1"><p class="font-semibold" x-text="b.name"></p><p class="text-sm text-bo-muted" x-text="b.when"></p></div>
+              <span class="mono text-sm font-bold" x-text="'+' + b.extra + '%'"></span>
+              <button @click="b.on=!b.on" class="toggle" :class="b.on && 'on'"></button>
+            </div></template>
+            <button @click="boostModal=true" class="h-11 px-4 rounded-lg border border-dashed border-bo-line font-semibold text-sm flex items-center gap-2 hover:border-bo-muted transition"><span x-html="icon('plus','w-4 h-4')"></span>Add a boost</button>
+          </div>
+
+          <!-- 4 LOCATIONS -->
+          <div x-show="setupStep===4" x-cloak class="grid lg:grid-cols-[1fr_320px] gap-5">
+            <div x-html="mapHTML(380)"></div>
+            <div class="space-y-3">
+              <template x-for="(l,i) in locations"><div class="p-3 rounded-lg border border-bo-line flex items-start gap-3">
+                <span class="w-8 h-8 rounded-md bg-bo-bg grid place-items-center text-sm font-bold mono" x-text="i+1"></span>
+                <div class="flex-1 min-w-0"><p class="font-semibold text-sm" x-text="l.name"></p><p class="text-xs text-bo-muted truncate" x-text="l.addr"></p></div>
+              </div></template>
+              <div class="p-3 rounded-lg border border-dashed border-bo-line">
+                <label class="text-xs font-semibold">Add a location</label>
+                <div class="relative mt-1"><span class="absolute left-3 top-3.5 text-bo-muted" x-html="icon('search','w-4 h-4')"></span><input x-model="newLoc" @keydown.enter="addLoc()" class="field !pl-9" placeholder="Search an address"></div>
+                <button @click="addLoc()" class="mt-2 w-full h-10 rounded-lg bg-bo-text text-white text-sm font-semibold hover:bg-black transition">Add location</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5 FUND -->
+          <div x-show="setupStep===5" x-cloak class="space-y-6 max-w-2xl">
+            <div><p class="font-semibold">Rewards money</p><p class="text-sm text-bo-muted">Cashback is paid from this balance. You can withdraw what is not used at any time.</p>
+              <div class="grid grid-cols-4 gap-2 mt-3">
+                <template x-for="a in [50,100,250]"><button @click="fund=a; customFund=''" class="h-16 rounded-lg border text-left px-4 transition" :class="fund===a && !customFund ? 'border-bo-text bg-bo-bg' : 'border-bo-line hover:border-bo-muted'"><p class="text-xl font-bold mono" x-text="'$'+a"></p><p class="text-xs text-bo-muted" x-text="'~'+Math.round(a/(10*cashback/100))+' visits'"></p></button></template>
+                <label class="h-16 rounded-lg border px-4 flex flex-col justify-center transition" :class="customFund ? 'border-bo-text bg-bo-bg' : 'border-bo-line'"><span class="text-xs text-bo-muted">Custom</span><span class="flex items-center mono text-xl font-bold">$<input x-model.number="customFund" type="number" min="10" class="w-full bg-transparent outline-none ml-0.5" placeholder="500"></span></label>
+              </div></div>
+            <div><p class="font-semibold">Pay with</p><div class="mt-3 space-y-2">
+                <template x-for="m in methods"><label class="flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition" :class="method===m.id ? 'border-bo-text' : 'border-bo-line hover:border-bo-muted'">
+                  <input type="radio" :value="m.id" x-model="method" class="accent-black">
+                  <span class="w-10 h-10 rounded-lg bg-bo-bg grid place-items-center" x-html="icon(m.i,'w-5 h-5')"></span>
+                  <span class="flex-1"><span class="block font-semibold" x-text="m.t"></span><span class="block text-sm text-bo-muted" x-text="m.d"></span></span>
+                  <span class="text-xs font-semibold" :class="m.tag==='Demo' ? 'demo' : 'text-bo-muted'" x-text="m.tag==='Demo' ? '(demo)' : m.tag"></span>
+                </label></template>
+              </div></div>
+            <div class="p-4 rounded-lg bg-bo-bg text-sm flex gap-3"><span x-html="icon('tablet','w-5 h-5')"></span><p>Counter devices can give at most <b>$30 a day</b> per location and can never withdraw. Change it in Devices.</p></div>
+          </div>
+        </div>
+
+        <div class="px-8 py-5 border-t border-bo-line flex items-center justify-between">
+          <button @click="setupStep>1 && setupStep--" class="h-11 px-5 rounded-lg border border-bo-line font-semibold hover:bg-bo-bg transition" :class="setupStep===1 && 'invisible'">Back</button>
+          <button @click="setupStep<5 ? setupStep++ : launch()" class="h-11 px-6 rounded-lg font-semibold transition hover:brightness-95" :style="{background:color, color:readable(color)}" x-text="setupStep<5 ? 'Continue' : `Pay ${money(customFund||fund)} and launch`"></button>
+        </div>
+      </div>
+
+      <aside class="xl:sticky xl:top-8 space-y-4">
+        <div class="bg-white border border-bo-line rounded-xl p-6">
+          <p class="text-sm font-semibold text-bo-muted">Customer card preview</p>
+          <div class="mt-4" x-html="cardArt({balance:1.25, visits:1, brand:{name, color, text:readable(color), mark:typeIcon(), logo}})"></div>
+          <dl class="mt-5 text-sm divide-y divide-bo-line">
+            <div class="flex justify-between py-2"><dt class="text-bo-muted">Cashback</dt><dd class="font-semibold mono" x-text="cashback+'%'"></dd></div>
+            <div class="flex justify-between py-2"><dt class="text-bo-muted">Active boosts</dt><dd class="font-semibold" x-text="boosts.filter(b=>b.on).length"></dd></div>
+            <div class="flex justify-between py-2"><dt class="text-bo-muted">Locations</dt><dd class="font-semibold" x-text="locations.length"></dd></div>
+            <div class="flex justify-between py-2"><dt class="text-bo-muted">Resale share</dt><dd class="font-semibold mono" x-text="royalty+'%'"></dd></div>
+          </dl>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ================= OVERVIEW ================= -->
+    <section x-show="view==='overview'" x-cloak>
+      <div class="sticky z-20 bg-bo-bg/95 backdrop-blur border-b border-bo-line px-8 py-4 flex flex-wrap items-center gap-3" :style="{top: runway().level!=='ok' ? '60px' : '0'}">
+        <h1 class="text-2xl font-bold mr-auto">Overview</h1>
+        <div class="flex p-1 rounded-lg bg-white border border-bo-line text-sm font-semibold">
+          <template x-for="r in ['7d','30d','90d']"><button @click="range=r; custom={from:'',to:''}" class="h-8 px-3 rounded-md transition" :class="rangeSel()===r ? 'bg-bo-text text-white' : 'text-bo-muted hover:text-bo-text'" x-text="r"></button></template>
+          <!-- Custom range: popup calendar -->
+          <div class="relative" x-data="datepicker({range:true})" x-modelable="value" x-model="custom" @click.outside="open=false">
+            <button @click="open=!open" class="h-8 px-3 rounded-md flex items-center gap-1.5 transition" :class="(rangeSel()==='Custom') ? 'bg-bo-text text-white' : 'text-bo-muted hover:text-bo-text'"><span x-html="icon('calendar','w-4 h-4')"></span><span x-text="value.to ? label() : 'Custom'"></span></button>
+            <div x-show="open" x-transition.origin.top.right class="menu right-0 w-72 p-4">
+              <div class="flex items-center justify-between"><button @click="move(-1)" class="w-8 h-8 rounded-md hover:bg-bo-bg grid place-items-center rotate-90" x-html="icon('chevron','w-4 h-4')"></button><p class="font-bold text-sm" x-text="title()"></p><button @click="move(1)" class="w-8 h-8 rounded-md hover:bg-bo-bg grid place-items-center -rotate-90" x-html="icon('chevron','w-4 h-4')"></button></div>
+              <div class="grid grid-cols-7 mt-3 text-[11px] text-bo-muted font-semibold text-center"><template x-for="w in ['Mo','Tu','We','Th','Fr','Sa','Su']"><span x-text="w"></span></template></div>
+              <div class="grid grid-cols-7 mt-1"><template x-for="d in days()"><button :disabled="!d" @click="d && click(d)" @mouseenter="hover=d" class="cal-day" :class="state(d)" x-text="d ? d.getDate() : ''"></button></template></div>
+              <p class="mt-3 text-xs text-bo-muted">Pick a start and an end date.</p>
+            </div>
+          </div>
+        </div>
+        <div class="relative w-48" x-data="select(locOptions())" x-modelable="value" x-model="loc" @click.outside="open=false">
+          <button @click="open=!open" class="field !h-10 flex items-center justify-between text-sm font-semibold" :class="open && 'is-open'"><span class="flex items-center gap-2"><span x-html="icon('pin','w-4 h-4')"></span><span x-text="label()"></span></span><span x-html="icon('chevron','w-4 h-4')"></span></button>
+          <div x-show="open" x-transition.origin.top class="menu w-full"><template x-for="o in options"><button @click="pick(o)" class="menu-item"><span x-text="o.label"></span><span x-show="o.value===value" x-html="icon('check','w-4 h-4')"></span></button></template></div>
+        </div>
+        <label class="flex items-center gap-2 text-sm font-semibold text-bo-muted cursor-pointer"><button @click="compare=!compare" class="toggle" :class="compare && 'on'"></button>Compare</label>
+        <div class="relative" x-data="{open:false}" @click.outside="open=false">
+          <button @click="open=!open" class="h-10 px-4 rounded-lg border border-bo-line bg-white text-sm font-semibold flex items-center gap-2 hover:border-bo-muted transition"><span x-html="icon('download','w-4 h-4')"></span>Export<span x-html="icon('chevron','w-4 h-4')"></span></button>
+          <div x-show="open" x-transition.origin.top.right class="menu right-0 w-56">
+            <button @click="open=false; notify('Report exported as CSV')" class="menu-item"><span><b>CSV</b> <span class="text-bo-muted">for spreadsheets</span></span></button>
+            <button @click="open=false; notify('Report exported as PDF')" class="menu-item"><span><b>PDF</b> <span class="text-bo-muted">for sharing</span></span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-8 space-y-5">
+        <div class="grid xl:grid-cols-[1.5fr_1fr] gap-5">
+          <!-- Hero KPI + chart -->
+          <div class="bg-white border border-bo-line rounded-xl p-6">
+            <div class="flex items-start justify-between">
+              <div><p class="text-sm font-semibold text-bo-muted">Sales from members</p>
+                <p class="text-6xl font-extrabold tracking-tight mono mt-2" x-text="'$'+fmt(k().sales)"></p>
+                <p class="mt-2 text-sm"><span class="font-bold text-[#1F9D6B]" x-show="compare">+18% vs previous · </span><span class="text-bo-muted" x-text="fmt(k().visits)+' member visits · '+rangeLabel()"></span></p></div>
+              <span class="h-8 px-3 rounded-md bg-bo-bg text-xs font-semibold grid place-items-center" x-text="locLabel()"></span>
+            </div>
+            <div class="mt-6 grid grid-cols-[56px_1fr] gap-2">
+              <div class="relative h-56 mono text-[11px] text-bo-muted"><template x-for="t in yTicks()"><span class="absolute right-0 -translate-y-1/2" :style="{top: (100 - t/yMax()*100)+'%'}" x-text="'$'+fmt(t)"></span></template></div>
+              <div class="relative h-56" @mousemove="hoverAt($event)" @mouseleave="hi=null">
+                <!-- faint horizontal guides -->
+                <template x-for="t in yTicks()"><div class="absolute inset-x-0 border-t border-dashed border-bo-line" :style="{top: (100 - t/yMax()*100)+'%'}"></div></template>
+                <svg viewBox="0 0 600 220" class="absolute inset-0 w-full h-full overflow-visible" preserveAspectRatio="none">
+                  <path :d="area(series())" :fill="color" fill-opacity=".10"/>
+                  <path x-show="compare" :d="line(prevSeries())" stroke="#8A8790" stroke-width="1.75" stroke-dasharray="6 5" fill="none" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+                  <path :d="line(series())" :stroke="color" stroke-width="2.5" fill="none" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+                </svg>
+                <!-- hover marker -->
+                <template x-if="hi!==null"><div>
+                  <div class="absolute top-0 bottom-0 w-px bg-bo-text/30" :style="{left: hiX()+'%'}"></div>
+                  <div class="absolute w-3 h-3 -ml-1.5 -mt-1.5 rounded-full border-2 border-white shadow" :style="{left: hiX()+'%', top: hiY()+'%', background: color}"></div>
+                  <div class="absolute -translate-x-1/2 -translate-y-full -mt-3 px-3 py-2 rounded-lg bg-bo-text text-white text-xs whitespace-nowrap shadow-lg pointer-events-none" :style="{left: Math.min(88,Math.max(12,hiX()))+'%', top: hiY()+'%'}">
+                    <p class="text-white/60" x-text="pointLabel(hi)"></p>
+                    <p class="mono font-bold text-sm" x-text="money(series()[hi])"></p>
+                    <p x-show="compare" class="mono text-white/60" x-text="'Previous ' + money(prevSeries()[hi])"></p>
+                  </div>
+                </div></template>
+              </div>
+              <span></span>
+              <div class="relative h-5 mono text-[11px] text-bo-muted"><template x-for="x in xTicks()"><span class="absolute -translate-x-1/2 whitespace-nowrap" :style="{left: x.p+'%'}" x-text="x.l"></span></template></div>
+            </div>
+            <div class="flex gap-5 mt-3 text-xs font-semibold text-bo-muted"><span class="flex items-center gap-1.5"><span class="w-3 h-1 rounded" :style="{background:color}"></span>Member sales</span><span x-show="compare" class="flex items-center gap-1.5"><span class="w-4 border-t-2 border-dashed border-[#8A8790]"></span>Previous period</span><span class="ml-auto font-normal">Hover the chart to see each value</span></div>
+          </div>
+          <div class="grid grid-cols-2 gap-5">
+            <div class="bg-white border border-bo-line rounded-xl p-5"><p class="text-sm font-semibold text-bo-muted">Rewards paid</p><p class="text-3xl font-extrabold mono mt-2" x-text="money(k().rewards)"></p><p class="text-xs text-bo-muted mt-1">Cashback credited to cards</p></div>
+            <div class="bg-white border border-bo-line rounded-xl p-5"><div class="flex items-center justify-between"><p class="text-sm font-semibold text-bo-muted">Return on rewards</p><span class="h-6 px-2 rounded-md text-xs font-bold mono grid place-items-center" :style="{background:color,color:readable(color)}" x-text="Math.round(k().sales/k().rewards)+'x'"></span></div><p class="text-3xl font-extrabold mono mt-2" x-text="money(k().sales/k().rewards)"></p><p class="text-xs text-bo-muted mt-1">Member sales per $1.00 of rewards</p></div>
+            <div class="bg-white border border-bo-line rounded-xl p-5"><p class="text-sm font-semibold text-bo-muted">Came back</p><p class="text-3xl font-extrabold mono mt-2">61.4%</p><p class="text-xs text-bo-muted mt-1">Within 14 days of a visit</p></div>
+            <div class="bg-white border border-bo-line rounded-xl p-5"><p class="text-sm font-semibold text-bo-muted">Active cards</p><p class="text-3xl font-extrabold mono mt-2" x-text="fmt(186*Math.min(1,factor()+.3))"></p><p class="text-xs text-bo-muted mt-1">Used at least once</p></div>
+          </div>
+        </div>
+
+        <div class="grid xl:grid-cols-3 gap-5">
+          <div class="bg-white border border-bo-line rounded-xl p-6">
+            <h2 class="font-bold">By location</h2>
+            <div class="mt-4 space-y-3"><template x-for="l in locations"><div>
+              <div class="flex justify-between text-sm"><span class="font-semibold" x-text="l.name"></span><span class="mono" x-text="'$'+fmt(k().sales*(loc==='all' ? l.share : (loc===l.name ? 1 : 0)))"></span></div>
+              <div class="h-2 rounded-full bg-bo-bg mt-1.5"><div class="h-full rounded-full transition-all duration-700" :style="{width:(loc==='all' ? l.share*100 : (loc===l.name?100:0))+'%', background:color}"></div></div>
+            </div></template></div>
+          </div>
+          <div class="bg-white border border-bo-line rounded-xl p-6">
+            <h2 class="font-bold">What members buy</h2><p class="text-xs text-bo-muted">Tagged at the counter</p>
+            <div class="mt-4 space-y-3"><template x-for="p in products"><div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-md bg-bo-bg grid place-items-center" x-html="icon(p[1],'w-4 h-4')"></span>
+              <div class="flex-1"><div class="flex justify-between text-sm"><span class="font-semibold" x-text="p[0]"></span><span class="mono" x-text="p[2]+'%'"></span></div>
+                <div class="h-1.5 rounded-full bg-bo-bg mt-1"><div class="h-full rounded-full bg-bo-text" :style="{width:p[2]+'%'}"></div></div></div>
+            </div></template></div>
+          </div>
+          <div class="bg-white border border-bo-line rounded-xl p-6">
+            <h2 class="font-bold">New and returning members</h2><p class="text-xs text-bo-muted">Share of member visits</p>
+            <div class="mt-4 flex items-center gap-6">
+              <svg viewBox="0 0 42 42" class="w-36 h-36 -rotate-90"><circle cx="21" cy="21" r="15.9" fill="none" stroke="#F4F4F2" stroke-width="6"/><circle cx="21" cy="21" r="15.9" fill="none" :stroke="color" stroke-width="6" stroke-dasharray="72 28"/></svg>
+              <div class="space-y-3 text-sm"><p><span class="inline-block w-3 h-3 rounded-sm mr-2" :style="{background:color}"></span><b class="mono">72%</b> returning</p><p><span class="inline-block w-3 h-3 rounded-sm mr-2 bg-bo-bg border border-bo-line"></span><b class="mono">28%</b> first visit</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white border border-bo-line rounded-xl">
+          <div class="px-6 py-4 flex items-center justify-between border-b border-bo-line"><h2 class="font-bold flex items-center gap-2">Recent activity <span class="flex items-center gap-1.5 text-xs font-semibold text-[#1F9D6B]"><span class="w-2 h-2 rounded-full bg-[#1F9D6B] animate-pulse"></span>Live</span></h2><span class="text-sm text-bo-muted" x-text="locLabel()"></span></div>
+          <table class="w-full text-sm">
+            <thead class="text-bo-muted text-left"><tr><th class="px-6 py-3 font-semibold">Time</th><th class="py-3 font-semibold">Card</th><th class="py-3 font-semibold">Location</th><th class="py-3 font-semibold">Item</th><th class="py-3 font-semibold text-right">Amount</th><th class="px-6 py-3 font-semibold text-right">Cashback</th></tr></thead>
+            <tbody><template x-for="r in pageOf(actRows(), actPage, 5)" :key="r.id"><tr class="border-t border-bo-line" :class="r.fresh && 'row-flash'">
+              <td class="px-6 py-3 mono text-bo-muted" x-text="r.t"></td><td class="py-3 font-semibold mono" x-text="r.card"></td><td class="py-3" x-text="r.loc"></td><td class="py-3" x-text="r.item"></td>
+              <td class="py-3 text-right mono" x-text="money(r.amt)"></td><td class="px-6 py-3 text-right mono" x-text="r.cb ? '+'+money(r.cb) : 'Resale +'+money(r.roy)"></td></tr></template></tbody>
+          </table>
+          <div class="px-6 py-3 border-t border-bo-line flex items-center justify-between text-sm">
+            <span class="text-bo-muted" x-text="pagerText(actRows().length, actPage, 5)"></span>
+            <div class="flex gap-1"><button @click="actPage=Math.max(0,actPage-1)" :disabled="actPage===0" class="h-8 w-8 rounded-md border border-bo-line grid place-items-center hover:bg-bo-bg disabled:opacity-30 rotate-90" x-html="icon('chevron','w-4 h-4')"></button>
+              <button @click="actPage=Math.min(pages(actRows().length,5)-1,actPage+1)" :disabled="actPage>=pages(actRows().length,5)-1" class="h-8 w-8 rounded-md border border-bo-line grid place-items-center hover:bg-bo-bg disabled:opacity-30 -rotate-90" x-html="icon('chevron','w-4 h-4')"></button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CUSTOMERS ================= -->
+    <section x-show="view==='customers'" x-cloak class="p-8">
+      <div class="flex flex-wrap items-center gap-3"><h1 class="text-2xl font-bold mr-auto">Customers</h1>
+        <div class="relative w-64"><span class="absolute left-3 top-3.5 text-bo-muted" x-html="icon('search','w-4 h-4')"></span><input x-model="q" @input="custPage=0" class="field !pl-9" placeholder="Search card number"></div>
+        <div class="relative w-44" x-data="select(['All levels','Bronze','Silver','Gold'])" x-modelable="value" x-model="lvl" @click.outside="open=false">
+          <button @click="open=!open" class="field flex items-center justify-between text-sm font-semibold" :class="open && 'is-open'"><span x-text="label()"></span><span x-html="icon('chevron','w-4 h-4')"></span></button>
+          <div x-show="open" x-transition.origin.top class="menu w-full"><template x-for="o in options"><button @click="pick(o); custPage=0" class="menu-item"><span x-text="o"></span><span x-show="o===value" x-html="icon('check','w-4 h-4')"></span></button></template></div>
+        </div>
+      </div>
+      <div class="grid md:grid-cols-4 gap-4 mt-5">
+        <div class="rounded-xl p-5 text-white" :style="{background:color, color:readable(color)}"><div class="flex items-center justify-between"><p class="text-sm font-semibold opacity-80">Members</p><span x-html="icon('users','w-5 h-5')"></span></div><p class="text-4xl font-extrabold mono mt-3">186</p><p class="text-xs mt-1 opacity-80">+23 this month</p></div>
+        <template x-for="m in [['Gold members','24','star','+5 this month'],['Avg visits per member','4.8','chart','+0.6 vs last month'],['Balance held on cards','$412.30','wallet','Liability you have prepaid']]"><div class="bg-white border border-bo-line rounded-xl p-5"><div class="flex items-center justify-between"><p class="text-sm font-semibold text-bo-muted" x-text="m[0]"></p><span class="w-8 h-8 rounded-lg bg-bo-bg grid place-items-center" x-html="icon(m[2],'w-4 h-4')"></span></div><p class="text-4xl font-extrabold mono mt-3" x-text="m[1]"></p><p class="text-xs text-bo-muted mt-1" x-text="m[3]"></p></div></template>
+      </div>
+      <div class="bg-white border border-bo-line rounded-xl mt-5 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-bo-bg/60 text-bo-muted text-left"><tr><th class="px-6 py-3 font-semibold">Card</th><th class="py-3 font-semibold">Level</th><th class="py-3 font-semibold">Visits</th><th class="py-3 font-semibold">Spent</th><th class="py-3 font-semibold">Balance</th><th class="py-3 font-semibold">Last visit</th><th class="py-3 font-semibold">Location</th><th class="px-6"></th></tr></thead>
+          <tbody><template x-for="c in pageOf(members(), custPage, 6)" :key="c.n"><tr @click="openDrawer('customer', c)" class="border-t border-bo-line hover:bg-bo-bg/60 cursor-pointer transition">
+            <td class="px-6 py-3 font-bold mono" x-text="c.n"></td>
+            <td class="py-3"><span class="inline-flex items-center gap-1.5 font-semibold"><span class="w-2.5 h-2.5 rounded-sm" :style="{background:TIERS[c.tier].color}"></span><span x-text="TIERS[c.tier].name"></span></span></td>
+            <td class="py-3 mono" x-text="c.v"></td><td class="py-3 mono" x-text="money(c.spent)"></td><td class="py-3 mono" x-text="money(c.bal)"></td><td class="py-3 text-bo-muted" x-text="c.last"></td><td class="py-3" x-text="c.loc"></td>
+            <td class="px-6 text-bo-muted -rotate-90" x-html="icon('chevron','w-4 h-4')"></td>
+          </tr></template></tbody>
+        </table>
+        <div class="px-6 py-3 border-t border-bo-line flex items-center justify-between text-sm">
+          <span class="text-bo-muted" x-text="pagerText(members().length, custPage, 6)"></span>
+          <div class="flex gap-1"><template x-for="i in pages(members().length,6)"><button @click="custPage=i-1" class="h-8 min-w-8 px-2 rounded-md text-sm font-semibold transition" :class="custPage===i-1 ? 'bg-bo-text text-white' : 'border border-bo-line hover:bg-bo-bg'" x-text="i"></button></template></div>
+        </div>
+      </div>
+      <p class="mt-3 text-xs text-bo-muted">Cards are anonymous: no names or emails are stored.</p>
+    </section>
+
+    <!-- ================= BOOSTS ================= -->
+    <section x-show="view==='boosts'" x-cloak class="p-8">
+      <div class="flex flex-wrap items-center gap-3"><h1 class="text-2xl font-bold mr-auto">Boosts</h1>
+        <div class="flex p-1 rounded-lg bg-white border border-bo-line text-sm font-semibold"><template x-for="r in [3,6,12]"><button @click="calMonths=r" class="h-8 px-3 rounded-md transition" :class="calMonths===r ? 'bg-bo-text text-white' : 'text-bo-muted hover:text-bo-text'" x-text="r+' months'"></button></template></div>
+        <button @click="boostModal=true" class="h-10 px-4 rounded-lg font-semibold text-sm flex items-center gap-2 hover:brightness-95 transition" :style="{background:color,color:readable(color)}"><span x-html="icon('plus','w-4 h-4')"></span>New boost</button></div>
+      <div class="mt-5 grid gap-4" :class="calMonths===3 ? 'md:grid-cols-3' : 'md:grid-cols-3 xl:grid-cols-4'">
+        <template x-for="m in calendar()"><div class="bg-white border border-bo-line rounded-xl p-4">
+          <p class="font-bold" x-text="m.title"></p>
+          <div class="grid grid-cols-7 mt-3 text-[10px] text-bo-muted font-semibold text-center"><template x-for="w in ['M','T','W','T','F','S','S']"><span x-text="w"></span></template></div>
+          <div class="grid grid-cols-7 gap-0.5 mt-1">
+            <template x-for="d in m.days"><div class="relative h-8 rounded-md grid place-items-center text-[11px] mono" :class="!d ? '' : (d.today ? 'ring-2 ring-bo-text' : '')" :style="d && d.boost ? {background: color + (d.boost.on ? '' : '33'), color: d.boost.on ? readable(color) : '#1C1B1F'} : {}" :title="d && d.boost ? d.boost.name + ' +' + d.boost.extra + '%' : ''">
+              <span x-text="d ? d.n : ''"></span>
+            </div></template>
+          </div>
+        </div></template>
+      </div>
+      <div class="flex flex-wrap gap-4 mt-3 text-xs text-bo-muted font-semibold"><span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm" :style="{background:color}"></span>Active boost</span><span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm" :style="{background:color+'33'}"></span>Paused boost</span><span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm ring-2 ring-bo-text"></span>Today</span></div>
+      <div class="grid md:grid-cols-2 gap-4 mt-6">
+        <template x-for="b in boosts"><div class="bg-white border border-bo-line rounded-xl p-5 flex items-center gap-4">
+          <span class="w-12 h-12 rounded-lg grid place-items-center" :style="b.on ? {background:color, color:readable(color)} : {background:'#F4F4F2', color:'#6E6B73'}" x-html="icon('calendar','w-6 h-6')"></span>
+          <div class="flex-1"><p class="font-bold" x-text="b.name"></p><p class="text-sm text-bo-muted" x-text="b.when + ' · ' + Math.min(25,cashback + b.extra) + '% total'"></p></div>
+          <span class="mono text-sm font-bold" x-text="'+' + b.extra + '%'"></span>
+          <button @click="b.on=!b.on" class="toggle" :class="b.on && 'on'"></button>
+        </div></template>
+      </div>
+    </section>
+
+    <!-- ================= LOCATIONS ================= -->
+    <section x-show="view==='locations'" x-cloak class="p-8">
+      <div class="flex items-center justify-between"><h1 class="text-2xl font-bold">Locations</h1><button @click="view='setup'; setupStep=4" class="h-10 px-4 rounded-lg border border-bo-line bg-white font-semibold text-sm flex items-center gap-2 hover:border-bo-muted transition"><span x-html="icon('plus','w-4 h-4')"></span>Add location</button></div>
+      <div class="grid xl:grid-cols-[1.3fr_1fr] gap-5 mt-5">
+        <div x-html="mapHTML(460)"></div>
+        <div class="space-y-4"><template x-for="l in locations"><div class="bg-white border border-bo-line rounded-xl p-5">
+          <div class="flex items-start justify-between"><div><p class="font-bold text-lg" x-text="l.name"></p><p class="text-sm text-bo-muted" x-text="l.addr"></p></div><span class="h-7 px-2.5 rounded-md bg-bo-bg text-xs font-semibold grid place-items-center" x-text="l.devices + ' devices'"></span></div>
+          <div class="grid grid-cols-3 gap-2 mt-4 text-sm"><div class="rounded-lg bg-bo-bg p-3"><p class="text-bo-muted text-xs">Member sales</p><p class="font-bold mono" x-text="'$'+fmt(4820*l.share)"></p></div><div class="rounded-lg bg-bo-bg p-3"><p class="text-bo-muted text-xs">Today rewards</p><p class="font-bold mono" x-text="money(l.today)+' / $30'"></p></div><div class="rounded-lg bg-bo-bg p-3"><p class="text-bo-muted text-xs">Hours</p><p class="font-bold">7:00 to 19:00</p></div></div>
+        </div></template></div>
+      </div>
+    </section>
+
+    <!-- ================= DEVICES ================= -->
+    <section x-show="view==='devices'" x-cloak class="p-8">
+      <div class="flex items-center justify-between"><h1 class="text-2xl font-bold">Counter devices</h1><button @click="pairModal=true" class="h-10 px-4 rounded-lg font-semibold text-sm flex items-center gap-2 hover:brightness-95 transition" :style="{background:color,color:readable(color)}"><span x-html="icon('plus','w-4 h-4')"></span>Connect a device</button></div>
+      <div class="mt-5 p-4 rounded-xl bg-white border border-bo-line flex items-center gap-3 text-sm"><span class="w-9 h-9 rounded-lg bg-bo-bg grid place-items-center" x-html="icon('tablet','w-5 h-5')"></span><p>Each device holds a key that can only add purchases and accept balance codes, up to the daily limit of its location. It can never move rewards money out.</p></div>
+      <div class="bg-white border border-bo-line rounded-xl mt-4 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-bo-bg/60 text-bo-muted text-left"><tr><th class="px-6 py-3 font-semibold">Device</th><th class="py-3 font-semibold">Location</th><th class="py-3 font-semibold">Today</th><th class="py-3 font-semibold">Last used</th><th class="py-3 font-semibold">Status</th><th class="px-6 py-3"></th></tr></thead>
+          <tbody><template x-for="d in devices"><tr @click="openDrawer('device', d)" class="border-t border-bo-line hover:bg-bo-bg/60 cursor-pointer transition">
+            <td class="px-6 py-3"><span class="flex items-center gap-3"><span class="w-9 h-9 rounded-lg bg-bo-bg grid place-items-center" x-html="icon(d.kind,'w-5 h-5')"></span><span><span class="block font-semibold" x-text="d.name"></span><span class="block text-xs text-bo-muted mono" x-text="d.key"></span></span></span></td>
+            <td class="py-3" x-text="d.loc"></td>
+            <td class="py-3"><div class="flex items-center gap-2"><div class="w-20 h-1.5 rounded-full bg-bo-bg"><div class="h-full rounded-full" :style="{width:(d.today/30*100)+'%',background:color}"></div></div><span class="mono text-xs" x-text="money(d.today)"></span></div></td>
+            <td class="py-3 text-bo-muted" x-text="d.last"></td>
+            <td class="py-3"><span class="inline-flex items-center gap-1.5 text-xs font-semibold" :class="d.on ? 'text-[#1F9D6B]' : 'text-bo-muted'"><span class="w-2 h-2 rounded-full" :class="d.on ? 'bg-[#1F9D6B]' : 'bg-bo-muted'"></span><span x-text="d.on ? 'Active' : 'Revoked'"></span></span></td>
+            <td class="px-6 py-3 text-right"><button @click.stop="d.on=!d.on" class="h-8 px-3 rounded-md border border-bo-line text-xs font-semibold hover:border-bo-muted transition" x-text="d.on ? 'Revoke' : 'Restore'"></button></td>
+          </tr></template></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= REWARDS MONEY ================= -->
+    <section x-show="view==='funds'" x-cloak class="p-8">
+      <div class="flex items-center justify-between"><h1 class="text-2xl font-bold">Rewards money</h1>
+        <div class="flex items-center gap-2 text-sm"><span class="demo">(demo)</span><div class="flex p-1 rounded-lg bg-white border border-bo-line font-semibold"><template x-for="o in [[146.8,'Healthy'],[38,'Low'],[0,'Empty']]"><button @click="pool=o[0]" class="h-8 px-3 rounded-md transition" :class="pool===o[0] ? 'bg-bo-text text-white' : 'text-bo-muted hover:text-bo-text'" x-text="o[1]"></button></template></div></div></div>
+      <div class="grid xl:grid-cols-[1.1fr_1fr] gap-5 mt-5">
+        <div class="bg-white border rounded-xl p-6" :class="runway().level==='ok' ? 'border-bo-line' : 'border-red-300'">
+          <div class="flex items-start justify-between">
+            <div><p class="text-sm font-semibold text-bo-muted">Available for cashback</p><p class="text-6xl font-extrabold mono mt-2" :class="runway().level!=='ok' && 'text-red-600'" x-text="money(pool)"></p></div>
+            <span class="h-8 px-3 rounded-md text-xs font-bold grid place-items-center" :style="{background: runway().color + '22', color: runway().color}" x-text="runway().label"></span>
+          </div>
+          <!-- Runway gauge -->
+          <div class="mt-6">
+            <div class="flex justify-between text-sm"><span class="font-semibold">Runway</span><span class="mono font-bold" :style="{color: runway().color}" x-text="runway().level==='empty' ? '0 days' : '~' + runway().days + ' days left'"></span></div>
+            <div class="relative h-3 rounded-full bg-bo-bg mt-2 overflow-hidden">
+              <div class="absolute inset-y-0 left-0 rounded-full transition-all duration-700" :style="{width: Math.min(100, runway().days/30*100)+'%', background: runway().color}"></div>
+              <span class="absolute top-0 bottom-0 w-px bg-red-500/60" style="left:23.3%"></span>
+            </div>
+            <div class="flex justify-between text-[11px] text-bo-muted mono mt-1"><span>0</span><span style="margin-left:13%">7 days</span><span class="ml-auto">30+ days</span></div>
+            <p class="text-sm text-bo-muted mt-3" x-text="'At the current pace you give about ' + money(dailyBurn) + ' a day in cashback.'"></p>
+          </div>
+          <div class="flex gap-2 mt-6"><button @click="view='setup'; setupStep=5" class="h-11 px-5 rounded-lg font-semibold hover:brightness-95 transition" :style="{background:color,color:readable(color)}">Add money</button><button @click="notify('Withdrawal of $50.00 requested')" class="h-11 px-5 rounded-lg border border-bo-line font-semibold hover:bg-bo-bg transition">Withdraw</button></div>
+        </div>
+        <div class="bg-white border border-bo-line rounded-xl p-6">
+          <h2 class="font-bold">When money runs low</h2>
+          <ol class="mt-4 space-y-4 text-sm">
+            <li class="flex gap-3"><span class="w-7 h-7 rounded-full bg-amber-100 text-amber-700 grid place-items-center font-bold shrink-0">1</span><div><p class="font-semibold">7 days left</p><p class="text-bo-muted">Red banner on every screen, email and push to the owner and managers.</p></div></li>
+            <li class="flex gap-3"><span class="w-7 h-7 rounded-full bg-red-100 text-red-700 grid place-items-center font-bold shrink-0">2</span><div><p class="font-semibold">2 days left</p><p class="text-bo-muted">Counter devices show a warning to staff on every purchase.</p></div></li>
+            <li class="flex gap-3"><span class="w-7 h-7 rounded-full bg-red-600 text-white grid place-items-center font-bold shrink-0">3</span><div><p class="font-semibold">Empty</p><p class="text-bo-muted">Purchases still count for visits and levels. Cashback is recorded as pending and lands on cards automatically after the top-up. Customers see "Cashback pending", never an error.</p></div></li>
+          </ol>
+          <label class="mt-5 flex items-center gap-3 text-sm p-3 rounded-lg bg-bo-bg"><button @click="lowAlert=!lowAlert" class="toggle" :class="lowAlert && 'on'"></button><span>Also email me below <b class="mono">$25.00</b></span></label>
+        </div>
+      </div>
+      <div class="bg-white border border-bo-line rounded-xl mt-5">
+        <h2 class="px-6 py-4 font-bold border-b border-bo-line">History</h2>
+        <ul class="divide-y divide-bo-line text-sm"><template x-for="h in history"><li class="px-6 py-3 flex items-center gap-3">
+          <span class="w-9 h-9 rounded-lg bg-bo-bg grid place-items-center" x-html="icon(h.i,'w-4 h-4')"></span>
+          <div class="flex-1"><p class="font-semibold" x-text="h.t"></p><p class="text-xs text-bo-muted" x-text="h.d"></p></div>
+          <span class="mono font-bold" :class="h.a>0 ? 'text-[#1F9D6B]' : ''" x-text="(h.a>0?'+':'')+money(h.a)"></span>
+        </li></template></ul>
+      </div>
+    </section>
+
+    <!-- ================= SETTINGS ================= -->
+    <section x-show="view==='settings'" x-cloak class="p-8 max-w-3xl">
+      <h1 class="text-2xl font-bold">Settings</h1>
+      <div class="bg-white border border-bo-line rounded-xl mt-5 divide-y divide-bo-line">
+        <div class="p-6 flex items-center justify-between"><div><p class="font-bold">Brand and rewards</p><p class="text-sm text-bo-muted">Name, color, logo, cashback and levels</p></div><button @click="view='setup'; setupStep=1" class="h-9 px-4 rounded-lg border border-bo-line text-sm font-semibold hover:bg-bo-bg transition">Edit</button></div>
+        <div class="p-6"><p class="font-bold">Team</p>
+          <ul class="mt-3 space-y-2 text-sm"><template x-for="m in [['Ana Ruiz','Owner','cornercafe.testnet'],['Leo Park','Manager','leo.testnet']]"><li class="flex items-center gap-3"><span class="w-9 h-9 rounded-full bg-bo-bg grid place-items-center font-bold" x-text="m[0][0]"></span><span class="flex-1"><b x-text="m[0]"></b> <span class="text-bo-muted mono text-xs" x-text="m[2]"></span></span><span class="text-bo-muted" x-text="m[1]"></span></li></template></ul>
+          <button class="mt-3 text-sm font-semibold underline underline-offset-4">Invite a manager</button></div>
+        <div class="p-6 space-y-3"><p class="font-bold">Notifications</p>
+          <template x-for="n in notifs"><label class="flex items-center justify-between text-sm"><span x-text="n.t"></span><button @click="n.on=!n.on" class="toggle" :class="n.on && 'on'"></button></label></template></div>
+        <div class="p-6 flex items-center justify-between"><div><p class="font-bold">Pause the program</p><p class="text-sm text-bo-muted">Counters stop adding cashback. Cards keep their balance.</p></div><button class="h-9 px-4 rounded-lg border border-coral text-coral-dark text-sm font-semibold hover:bg-coral-soft transition">Pause</button></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= OVERLAYS ================= -->
+  <!-- Live sale toast: solid, closable -->
+  <div class="fixed top-20 right-6 z-50 space-y-2 w-80">
+    <template x-for="t in toasts" :key="t.id"><div class="live-in bg-bo-text text-white rounded-xl shadow-[0_18px_40px_-14px_rgba(0,0,0,.5)] p-4 flex items-start gap-3">
+      <span class="w-10 h-10 rounded-lg grid place-items-center shrink-0" :style="{background:color,color:readable(color)}" x-html="icon(t.icon,'w-5 h-5')"></span>
+      <div class="flex-1 min-w-0"><p class="font-bold text-sm" x-text="t.title"></p><p class="text-xs text-white/60" x-text="t.sub"></p><p x-show="t.amt" class="mt-1 mono text-sm font-bold text-[#FFD84D]" x-text="t.amt"></p></div>
+      <button @click="toasts=toasts.filter(x=>x!==t)" class="w-7 h-7 rounded-md text-white/50 hover:text-white hover:bg-white/10 grid place-items-center transition" aria-label="Close" x-html="icon('x','w-4 h-4')"></button>
+    </div></template>
+  </div>
+
+  <!-- Right drawer: customer or device detail -->
+  <div x-show="drawer" x-cloak class="fixed inset-0 z-40" @keydown.escape.window="drawer=null">
+    <div x-show="drawer" x-transition.opacity class="absolute inset-0 bg-black/30" @click="drawer=null"></div>
+    <aside x-show="drawer" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+      class="absolute right-0 top-0 h-full w-[440px] bg-white shadow-2xl flex flex-col">
+      <template x-if="drawer && drawer.type==='customer'"><div class="flex-1 flex flex-col min-h-0">
+        <div class="px-6 h-16 flex items-center justify-between border-b border-bo-line"><p class="font-bold" x-text="'Card ' + drawer.d.n"></p><button @click="drawer=null" class="w-9 h-9 rounded-lg hover:bg-bo-bg grid place-items-center" x-html="icon('x','w-5 h-5')"></button></div>
+        <div class="p-6 overflow-y-auto">
+          <div x-html="cardArt({balance:drawer.d.bal, visits:drawer.d.v, tier:drawer.d.tier, number:drawer.d.n, brand:{name, color, text:readable(color), mark:typeIcon(), logo}})"></div>
+          <div class="grid grid-cols-3 gap-2 mt-5 text-sm">
+            <div class="rounded-lg bg-bo-bg p-3"><p class="text-xs text-bo-muted">Visits</p><p class="font-bold mono" x-text="drawer.d.v"></p></div>
+            <div class="rounded-lg bg-bo-bg p-3"><p class="text-xs text-bo-muted">Spent</p><p class="font-bold mono" x-text="money(drawer.d.spent)"></p></div>
+            <div class="rounded-lg bg-bo-bg p-3"><p class="text-xs text-bo-muted">Cashback earned</p><p class="font-bold mono" x-text="money(drawer.d.spent*cashback/100)"></p></div>
+          </div>
+          <dl class="mt-5 text-sm divide-y divide-bo-line">
+            <div class="flex justify-between py-2"><dt class="text-bo-muted">Member since</dt><dd class="font-semibold">Oct 14, 2026</dd></div>
+            <div class="flex justify-between py-2"><dt class="text-bo-muted">Favorite location</dt><dd class="font-semibold" x-text="drawer.d.loc"></dd></div>
+            <div class="flex justify-between py-2"><dt class="text-bo-muted">Buys most</dt><dd class="font-semibold">Coffee</dd></div>
+            <div class="flex justify-between py-2"><dt class="text-bo-muted">Owners</dt><dd class="font-semibold" x-text="drawer.d.n==='0017' ? '2 (resold once)' : '1'"></dd></div>
+          </dl>
+          <h3 class="font-bold mt-6">History</h3>
+          <ul class="mt-2 relative pl-5 border-l border-bo-line space-y-4 text-sm"><template x-for="h in custHistory(drawer.d)"><li class="relative">
+            <span class="absolute -left-[27px] top-0.5 w-3.5 h-3.5 rounded-full border-2 border-white" :style="{background: h.k==='level' ? TIERS[drawer.d.tier].color : (h.k==='redeem' ? '#6E6B73' : color)}"></span>
+            <div class="flex justify-between gap-3"><p class="font-semibold" x-text="h.t"></p><span class="mono shrink-0" :class="h.a>0 ? 'text-[#1F9D6B]' : ''" x-text="h.a ? (h.a>0?'+':'')+money(h.a) : ''"></span></div>
+            <p class="text-xs text-bo-muted" x-text="h.d"></p>
+          </li></template></ul>
+        </div>
+      </div></template>
+      <template x-if="drawer && drawer.type==='device'"><div class="flex-1 flex flex-col min-h-0">
+        <div class="px-6 h-16 flex items-center justify-between border-b border-bo-line"><p class="font-bold" x-text="drawer.d.name"></p><button @click="drawer=null" class="w-9 h-9 rounded-lg hover:bg-bo-bg grid place-items-center" x-html="icon('x','w-5 h-5')"></button></div>
+        <div class="p-6 overflow-y-auto">
+          <div class="flex items-center gap-4"><span class="w-14 h-14 rounded-xl bg-bo-bg grid place-items-center" x-html="icon(drawer.d.kind,'w-7 h-7')"></span><div><p class="font-bold text-lg" x-text="drawer.d.loc"></p><p class="text-xs mono text-bo-muted" x-text="drawer.d.key"></p></div>
+            <span class="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold" :class="drawer.d.on ? 'text-[#1F9D6B]' : 'text-bo-muted'"><span class="w-2 h-2 rounded-full" :class="drawer.d.on ? 'bg-[#1F9D6B]' : 'bg-bo-muted'"></span><span x-text="drawer.d.on ? 'Active' : 'Revoked'"></span></span></div>
+          <div class="mt-5 p-4 rounded-lg bg-bo-bg">
+            <div class="flex justify-between text-sm"><span class="font-semibold">Rewards given today</span><span class="mono font-bold" x-text="money(drawer.d.today) + ' / $30.00'"></span></div>
+            <div class="h-2 rounded-full bg-white mt-2"><div class="h-full rounded-full" :style="{width:(drawer.d.today/30*100)+'%', background:color}"></div></div>
+          </div>
+          <div class="grid grid-cols-3 gap-2 mt-3 text-sm">
+            <div class="rounded-lg border border-bo-line p-3"><p class="text-xs text-bo-muted">Purchases today</p><p class="font-bold mono" x-text="Math.round(drawer.d.today/0.24)"></p></div>
+            <div class="rounded-lg border border-bo-line p-3"><p class="text-xs text-bo-muted">Codes accepted</p><p class="font-bold mono">3</p></div>
+            <div class="rounded-lg border border-bo-line p-3"><p class="text-xs text-bo-muted">Connected</p><p class="font-bold">Oct 30</p></div>
+          </div>
+          <div class="mt-4 p-4 rounded-lg border border-bo-line text-sm"><p class="font-semibold">Permissions</p><ul class="mt-2 space-y-1.5 text-bo-muted"><li class="flex gap-2"><span class="text-[#1F9D6B]" x-html="icon('check','w-4 h-4')"></span>Add purchases and issue cards</li><li class="flex gap-2"><span class="text-[#1F9D6B]" x-html="icon('check','w-4 h-4')"></span>Accept balance codes</li><li class="flex gap-2"><span class="text-red-600" x-html="icon('x','w-4 h-4')"></span>Move or withdraw rewards money</li></ul></div>
+          <h3 class="font-bold mt-6">Activity</h3>
+          <ul class="mt-2 divide-y divide-bo-line text-sm"><template x-for="a in deviceLog(drawer.d)"><li class="py-2.5 flex items-center gap-3">
+            <span class="mono text-xs text-bo-muted w-11" x-text="a.t"></span><span class="flex-1"><b class="mono" x-text="a.card"></b> <span class="text-bo-muted" x-text="a.what"></span></span><span class="mono" x-text="a.amt"></span></li></template></ul>
+          <button @click="drawer.d.on=!drawer.d.on" class="mt-6 w-full h-11 rounded-lg border font-semibold transition" :class="drawer.d.on ? 'border-red-300 text-red-700 hover:bg-red-50' : 'border-bo-line hover:bg-bo-bg'" x-text="drawer.d.on ? 'Revoke this device' : 'Restore this device'"></button>
+        </div>
+      </div></template>
+    </aside>
+  </div>
+
+  <!-- New boost modal with custom calendar -->
+  <div x-show="boostModal" x-cloak class="fixed inset-0 z-50 bg-black/40 grid place-items-center p-6" @click.self="boostModal=false">
+    <div class="bg-white rounded-xl w-full max-w-md p-6">
+      <h2 class="text-xl font-bold">New boost</h2>
+      <label class="block mt-4"><span class="text-sm font-semibold">Name</span><input x-model="nb.name" class="field mt-1.5" placeholder="Anniversary week"></label>
+      <div class="mt-4"><span class="text-sm font-semibold">Dates</span>
+        <div class="relative mt-1.5" x-data="datepicker({range:true})" x-modelable="value" x-model="nb.dates" @click.outside="open=false">
+          <button @click="open=!open" class="field flex items-center gap-2" :class="open && 'is-open'"><span class="text-bo-muted" x-html="icon('calendar','w-4 h-4')"></span><span x-text="label()"></span></button>
+          <div x-show="open" x-transition.origin.top class="menu w-full p-4">
+            <div class="flex items-center justify-between"><button @click="move(-1)" class="w-8 h-8 rounded-md hover:bg-bo-bg grid place-items-center rotate-90" x-html="icon('chevron','w-4 h-4')"></button><p class="font-bold text-sm" x-text="title()"></p><button @click="move(1)" class="w-8 h-8 rounded-md hover:bg-bo-bg grid place-items-center -rotate-90" x-html="icon('chevron','w-4 h-4')"></button></div>
+            <div class="grid grid-cols-7 mt-3 text-[11px] text-bo-muted font-semibold text-center"><template x-for="w in ['Mo','Tu','We','Th','Fr','Sa','Su']"><span x-text="w"></span></template></div>
+            <div class="grid grid-cols-7 mt-1"><template x-for="d in days()"><button :disabled="!d" @click="d && click(d)" @mouseenter="hover=d" class="cal-day" :class="state(d)" x-text="d ? d.getDate() : ''"></button></template></div>
+          </div>
+        </div></div>
+      <div class="mt-4"><div class="flex justify-between"><span class="text-sm font-semibold">Extra cashback</span><span class="mono font-bold" x-text="'+'+nb.extra+'%'"></span></div><input type="range" min="1" max="15" x-model.number="nb.extra" class="w-full mt-2"></div>
+      <p class="text-sm text-bo-muted mt-2" x-text="`Customers get ${Math.min(25,cashback+nb.extra)}% during the boost.`"></p>
+      <div class="mt-6 flex justify-end gap-2"><button @click="boostModal=false" class="h-10 px-4 rounded-lg border border-bo-line font-semibold hover:bg-bo-bg transition">Cancel</button><button @click="addBoost()" class="h-10 px-5 rounded-lg font-semibold hover:brightness-95 transition" :style="{background:color,color:readable(color)}">Create boost</button></div>
+    </div>
+  </div>
+
+  <!-- Pair device modal -->
+  <div x-show="pairModal" x-cloak class="fixed inset-0 z-50 bg-black/40 grid place-items-center p-6" @click.self="pairModal=false">
+    <div class="bg-white rounded-xl w-full max-w-lg p-6 grid grid-cols-[180px_1fr] gap-6">
+      <div class="w-44 h-44 p-3 rounded-lg border border-bo-line" x-html="fakeQR('pair-device-3')"></div>
+      <div><h2 class="text-xl font-bold">Connect a counter device</h2>
+        <ol class="mt-3 space-y-2 text-sm list-decimal pl-4"><li>Open the camera on the tablet or phone.</li><li>Scan this code. The counter screen opens.</li><li>The device gets a key limited to adding purchases.</li></ol>
+        <p class="mt-3 text-xs text-bo-muted">Code expires in 10 minutes.</p>
+        <button @click="pairModal=false; devices.push({name:'Counter 3',key:'ed25519:7Hq…k2',kind:'phone',loc:'Riverside',today:0,last:'Just now',on:true}); notify('Counter 3 connected')" class="mt-4 h-10 px-4 rounded-lg font-semibold hover:brightness-95 transition" :style="{background:color,color:readable(color)}">Simulate scan</button></div>
+    </div>
+  </div>
+
+  <!-- Launched -->
+  <div x-show="launched" x-cloak class="fixed inset-0 z-50 bg-black/50 grid place-items-center p-6" x-ref="party">
+    <div class="bg-white rounded-xl p-8 w-full max-w-md text-center">
+      <span class="mx-auto w-14 h-14 rounded-full grid place-items-center" :style="{background:color, color:readable(color)}" x-html="icon('check','w-7 h-7')"></span>
+      <p class="text-2xl font-bold mt-4">Your program is live</p>
+      <p class="text-bo-muted mt-1" x-text="money(customFund||fund) + ' added to rewards money. Print the poster and connect a counter device.'"></p>
+      <div class="mt-6 flex gap-2 justify-center">
+        <button @click="launched=false; view='overview'" class="h-11 px-5 rounded-lg font-semibold" :style="{background:color, color:readable(color)}">Go to overview</button>
+        <button @click="launched=false; view='devices'" class="h-11 px-5 rounded-lg border border-bo-line font-semibold hover:bg-bo-bg">Connect a device</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function bo() {
+  return {
+    mini: false, hi: null, actPage: 0, custPage: 0, calMonths: 3, dailyBurn: 7.9,
+    view: 'setup', setupStep: 1, launched: false, boostModal: false, pairModal: false, drawer: null, lowAlert: true,
+    name: 'Corner Café', cardName: 'Corner Café members', type: 'Coffee', color: '#E4572E', logo: null,
+    cashback: 5, royalty: 5, expiry: '90 days', fund: 100, customFund: '', method: 'near', pool: 146.8,
+    range: '30d', custom: { from: '', to: '' }, loc: 'all', compare: true, q: '', lvl: 'All levels',
+    nb: { name: '', dates: { from: '', to: '' }, extra: 5 }, newLoc: '', toasts: [],
+    nav: [['overview','Overview','chart'],['customers','Customers','users'],['boosts','Boosts','calendar'],['locations','Locations','pin'],['devices','Devices','tablet'],['funds','Rewards money','wallet'],['setup','Setup','star'],['settings','Settings','settings']],
+    steps: ['Brand','Rewards','Boosts','Locations','Fund'],
+    types: [['Coffee','cup'],['Restaurant','burger'],['Bakery','cookie'],['Barber','scissors'],['Gym','bolt'],['Retail','bag'],['Books','book']],
+    presets: [['Terracotta','#E4572E'],['Espresso','#3B2A22'],['Forest','#2F5D4E'],['Midnight','#1F2A44'],['Saffron','#E3A72F'],['Plum','#6E3B5C'],['Sage','#8FA98B'],['Ocean','#2C6E8F']],
+    levels: TIERS.map(t => ({ ...t })),
+    boosts: [
+      { name: 'Black Friday', when: 'Nov 27 to Nov 30', extra: 5, on: true, from: '2026-11-27', to: '2026-11-30' },
+      { name: 'Holidays', when: 'Dec 15 to Dec 31', extra: 3, on: true, from: '2026-12-15', to: '2026-12-31' },
+      { name: 'Valentine week', when: 'Feb 9 to Feb 15', extra: 3, on: false, from: '2027-02-09', to: '2027-02-15' },
+      { name: 'Slow Mondays', when: 'Every Monday', extra: 2, on: false, weekday: 1 },
+    ],
+    locations: [
+      { name: 'Downtown', addr: '120 Market St', x: 30, y: 38, devices: 2, share: .62, today: 18.4 },
+      { name: 'Riverside', addr: '48 River Rd', x: 70, y: 58, devices: 1, share: .38, today: 7.1 },
+    ],
+    devices: [
+      { name: 'Counter 1', key: 'ed25519:4Fa…x9', kind: 'tablet', loc: 'Downtown', today: 12.3, last: '2 min ago', on: true },
+      { name: 'Counter 2', key: 'ed25519:9Kd…p1', kind: 'phone', loc: 'Downtown', today: 6.1, last: '18 min ago', on: true },
+      { name: 'Bar tablet', key: 'ed25519:2Lm…z4', kind: 'tablet', loc: 'Riverside', today: 7.1, last: '1 h ago', on: true },
+    ],
+    methods: [
+      { id: 'card', i: 'card', t: 'Card', d: 'Visa or Mastercard. Converted to USDC for you.', tag: 'Production' },
+      { id: 'intents', i: 'link', t: 'USDC or USDT from any chain', d: 'Send from Ethereum, Solana, Base and more. Settled on NEAR.', tag: 'Production' },
+      { id: 'near', i: 'wallet', t: 'NEAR wallet', d: 'Sends test USDC from your testnet wallet.', tag: 'Demo' },
+    ],
+    products: [['Coffee','cup',48],['Food','burger',24],['Bakery','cookie',15],['Retail','bag',6],['Other','tag',7]],
+    history: [
+      { t: 'Added rewards money', d: 'Nov 1 · NEAR wallet', a: 100, i: 'wallet' },
+      { t: 'Cashback paid', d: 'Nov 1 to Nov 10 · 312 visits', a: -241.2, i: 'cup' },
+      { t: 'Resale earnings', d: 'Nov 8 · 2 cards', a: 1.2, i: 'tag' },
+      { t: 'Expired balances returned', d: 'Nov 5 · 3 cards', a: 4.8, i: 'calendar' },
+    ],
+    notifs: [{ t: 'Daily summary email', on: true }, { t: 'Live sale alerts in the dashboard', on: true }, { t: 'Card resold', on: false }],
+    activity: [
+      { id: 1, t: '10:42', card: '0042', loc: 'Downtown', item: 'Coffee', amt: 4.5, cb: .23 },
+      { id: 2, t: '10:31', card: '0017', loc: 'Riverside', item: 'Food', amt: 12, cb: .6 },
+      { id: 3, t: '10:12', card: '0031', loc: 'Downtown', item: 'Bakery', amt: 3.2, cb: .16 },
+      { id: 4, t: '09:58', card: '0009', loc: 'Downtown', item: 'Card resold', amt: 8, cb: 0, roy: .4 },
+      { id: 5, t: '09:40', card: '0038', loc: 'Riverside', item: 'Coffee', amt: 5, cb: .25 },
+      { id: 6, t: '09:22', card: '0088', loc: 'Downtown', item: 'Food', amt: 13.4, cb: .67 },
+      { id: 7, t: '09:05', card: '0104', loc: 'Riverside', item: 'Bakery', amt: 4.1, cb: .21 },
+      { id: 8, t: '08:51', card: '0126', loc: 'Downtown', item: 'Coffee', amt: 3.9, cb: .2 },
+      { id: 9, t: '08:37', card: '0061', loc: 'Downtown', item: 'Retail', amt: 18, cb: .9 },
+      { id: 10, t: '08:20', card: '0093', loc: 'Riverside', item: 'Coffee', amt: 4.5, cb: .23 },
+      { id: 11, t: '08:02', card: '0072', loc: 'Downtown', item: 'Other', amt: 6.2, cb: .31 },
+      { id: 12, t: '07:45', card: '0055', loc: 'Riverside', item: 'Food', amt: 11, cb: .55 },
+    ],
+    init() {
+      const feed = [['Coffee','cup',4.5],['Food','burger',11.8],['Bakery','cookie',3.6],['Retail','bag',16],['Coffee','cup',5.2]];
+      let i = 0;
+      setInterval(() => {
+        if (this.view !== 'overview') return;
+        const [item, ic, amt] = feed[i++ % feed.length], l = this.locations[i % this.locations.length].name;
+        const now = new Date(), t = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        const card = String(10 + Math.floor(Math.random() * 180)).padStart(4, '0'), cb = +(amt * this.cashback / 100).toFixed(2);
+        this.activity.forEach(a => a.fresh = false);
+        this.activity.unshift({ id: Date.now(), t, card, loc: l, item, amt, cb, fresh: true });
+        this.notify(`New sale · ${l}`, `Card ${card} · ${item} · ${money(amt)}`, '+' + money(cb), ic);
+      }, 9000);
+    },
+    runway() {
+      const days = Math.floor(this.pool / this.dailyBurn);
+      if (this.pool <= 0) return { level: 'empty', days: 0, color: '#DC2626', label: 'Empty' };
+      if (days <= 7) return { level: 'low', days, color: '#DC2626', label: 'Low' };
+      if (days <= 14) return { level: 'ok', days, color: '#D97706', label: 'Watch' };
+      return { level: 'ok', days, color: '#1F9D6B', label: 'Healthy' };
+    },
+    openDrawer(type, d) { this.drawer = { type, d }; },
+    pageOf(list, page, size) { return list.slice(page * size, page * size + size); },
+    pages(n, size) { return Math.max(1, Math.ceil(n / size)); },
+    pagerText(n, page, size) { return n ? `${page * size + 1} to ${Math.min(n, page * size + size)} of ${n}` : 'No results'; },
+    actRows() { return this.activity.filter(a => this.loc === 'all' || a.loc === this.loc); },
+    prevSeries() { return this.bucket(this.daily(this.nDays(), 91, this.locShare() * .86)); },
+    hoverAt(e) { const r = e.currentTarget.getBoundingClientRect(), n = this.series().length; this.hi = Math.max(0, Math.min(n - 1, Math.round((e.clientX - r.left) / r.width * (n - 1)))); },
+    hiX() { return this.hi / (this.series().length - 1) * 100; },
+    hiY() { return 100 - this.series()[this.hi] / this.yMax() * 100; },
+    pointLabel(i) {
+      const days = this.nDays(), end = this.custom.to ? new Date(this.custom.to) : new Date(2026, 10, 10);
+      const d = new Date(end.getTime() - (days - 1 - (days > 31 ? i * 7 : i)) * 864e5);
+      return (days > 31 ? 'Week of ' : '') + d.toLocaleString('en-US', { weekday: days > 31 ? undefined : 'short', month: 'short', day: 'numeric' });
+    },
+    calendar() {
+      const start = new Date(2026, 10, 1), today = '2026-11-11', out = [];
+      const ranges = this.boosts.filter(b => b.from).map(b => ({ b, from: b.from, to: b.to }));
+      for (let m = 0; m < this.calMonths; m++) {
+        const first = new Date(start.getFullYear(), start.getMonth() + m, 1), y = first.getFullYear(), mo = first.getMonth();
+        const lead = (first.getDay() + 6) % 7, n = new Date(y, mo + 1, 0).getDate(), days = Array(lead).fill(null);
+        for (let d = 1; d <= n; d++) {
+          const iso = `${y}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`, wd = new Date(y, mo, d).getDay();
+          const hit = ranges.find(r => iso >= r.from && iso <= r.to) || this.boosts.find(b => b.weekday !== undefined && b.weekday === wd && b.on);
+          days.push({ n: d, today: iso === today, boost: hit ? (hit.b || hit) : null });
+        }
+        out.push({ title: first.toLocaleString('en-US', { month: 'long', year: 'numeric' }), days });
+      }
+      return out;
+    },
+    custHistory(c) {
+      const h = [{ k: 'buy', t: 'Coffee at ' + c.loc, d: c.last, a: .23 }, { k: 'buy', t: 'Food at ' + c.loc, d: '3 days ago', a: .6 }];
+      if (c.tier > 0) h.push({ k: 'level', t: 'Reached ' + TIERS[c.tier].name, d: '5 days ago', a: 0 });
+      h.push({ k: 'redeem', t: 'Used balance at the counter', d: '1 week ago', a: -1.1 }, { k: 'buy', t: 'Bakery at ' + c.loc, d: '9 days ago', a: .16 }, { k: 'join', t: 'Joined the club', d: 'Oct 14', a: 0 });
+      return h;
+    },
+    deviceLog(d) { return [['10:42','0042','Coffee','+$0.23'],['10:31','0017','Food','+$0.60'],['10:20','0031','used balance code 7K4Q','$0.50'],['10:12','0038','new card issued',''],['09:58','0055','Bakery','+$0.16']].map(x => ({ t: x[0], card: x[1], what: x[2], amt: x[3] })); },
+    notify(title, sub = '', amt = '', ic = 'check') {
+      const t = { id: Date.now() + Math.random(), title, sub, amt, icon: ic };
+      this.toasts.push(t); setTimeout(() => this.toasts = this.toasts.filter(x => x !== t), 4200);
+    },
+    typeIcon() { return (this.types.find(t => t[0] === this.type) || this.types[0])[1]; },
+    readLogo(e) { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => this.logo = r.result; r.readAsDataURL(f); },
+    addBoost() {
+      if (!this.nb.name) return;
+      const d = this.nb.dates, fm = v => v ? new Date(v + 'T00:00').toLocaleString('en-US', { month: 'short', day: 'numeric' }) : '';
+      this.boosts.push({ name: this.nb.name, when: d.from ? `${fm(d.from)} to ${fm(d.to || d.from)}` : 'No dates', extra: this.nb.extra, on: true, from: d.from, to: d.to || d.from });
+      this.nb = { name: '', dates: { from: '', to: '' }, extra: 5 }; this.boostModal = false; this.notify('Boost created');
+    },
+    addLoc() { if (!this.newLoc) return; this.locations.push({ name: this.newLoc.split(',')[0], addr: this.newLoc, x: 20 + Math.random() * 60, y: 25 + Math.random() * 45, devices: 0, share: .1, today: 0 }); this.newLoc = ''; },
+    launch() { this.launched = true; this.setupStep = 6; this.$nextTick(() => confetti(this.$refs.party, 40)); },
+    mapHTML(h) {
+      const pins = this.locations.map(l => `<div class="absolute -translate-x-1/2 -translate-y-full flex flex-col items-center" style="left:${l.x}%;top:${l.y}%"><span class="mb-1 px-2 py-1 rounded-md bg-white shadow text-xs font-semibold whitespace-nowrap">${l.name}</span><span class="w-9 h-9" style="color:${this.color}">${icon('pin', 'w-9 h-9')}</span></div>`).join('');
+      return `<div class="relative rounded-xl overflow-hidden border border-bo-line bg-[#EEF0EC]" style="height:${h}px">
+        <svg viewBox="0 0 600 380" class="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice"><rect width="600" height="380" fill="#EEF0EC"/><path d="M0 250 C 150 220, 260 300, 600 230 L600 380 L0 380Z" fill="#D6E6EE"/><g stroke="#fff" stroke-width="10" fill="none"><path d="M0 90 H600"/><path d="M0 170 H600"/><path d="M120 0 V380"/><path d="M330 0 V380"/><path d="M480 0 V230"/></g><g stroke="#fff" stroke-width="4" fill="none" opacity=".8"><path d="M0 40 H600"/><path d="M0 130 H600"/><path d="M60 0 V380"/><path d="M220 0 V250"/><path d="M410 0 V240"/><path d="M540 0 V230"/></g><rect x="235" y="190" width="80" height="45" rx="6" fill="#CFE3C8"/></svg>
+        ${pins}<div class="absolute left-3 bottom-3 text-[11px] font-semibold bg-white/90 px-2 py-1 rounded">Map preview <span class="demo">(Google Maps in production)</span></div></div>`;
+    },
+    locOptions() { return [{ value: 'all', label: 'All locations' }, ...this.locations.map(l => ({ value: l.name, label: l.name }))]; },
+    locLabel() { return this.loc === 'all' ? 'All locations' : this.loc; },
+    rangeSel() { return this.custom.to ? 'Custom' : this.range; },
+    nDays() { if (this.custom.to) return Math.max(2, Math.round((new Date(this.custom.to) - new Date(this.custom.from)) / 864e5) + 1); return { '7d': 7, '30d': 30, '90d': 90 }[this.range]; },
+    factor() { const l = this.loc === 'all' ? 1 : (this.locations.find(x => x.name === this.loc)?.share || 1); return this.nDays() / 30 * l; },
+    // Realistic daily member sales: weekday pattern + small trend + seeded noise (no smooth waves).
+    daily(n, seed, scale = 1) {
+      let h = seed; const rnd = () => ((h = (h * 1103515245 + 12345) >>> 0) / 4294967296);
+      const week = [0.82, 0.88, 0.95, 1.0, 1.12, 1.32, 1.18]; // Mon..Sun
+      const end = this.custom.to ? new Date(this.custom.to) : new Date(2026, 10, 10);
+      return Array.from({ length: n }, (_, i) => {
+        const d = new Date(end.getTime() - (n - 1 - i) * 864e5), wd = (d.getDay() + 6) % 7;
+        return Math.round((150 * week[wd] * (1 + i / n * 0.12) * (0.85 + rnd() * 0.3)) * scale * 100) / 100;
+      });
+    },
+    locShare() { return this.loc === 'all' ? 1 : (this.locations.find(x => x.name === this.loc)?.share || 1); },
+    bucket(d) { return d.length <= 31 ? d : Array.from({ length: Math.ceil(d.length / 7) }, (_, i) => d.slice(i * 7, i * 7 + 7).reduce((a, b) => a + b, 0)); },
+    series() { return this.bucket(this.daily(this.nDays(), 7, this.locShare())); },
+    k() { const sales = this.daily(this.nDays(), 7, this.locShare()).reduce((a, b) => a + b, 0); return { sales, visits: Math.round(sales / 15.4), rewards: sales * .0505 }; },
+    yMax() { const raw = Math.max(...this.series(), ...(this.compare ? this.prevSeries() : [])) * 1.08 / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))); const step = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 7.5, 8, 10].map(m => m * mag).find(v => v >= raw); return step * 4; },
+    yTicks() { const m = this.yMax(); return [0, m / 4, m / 2, m * 3 / 4, m]; },
+    xTicks() {
+      const s = this.series(), n = s.length, end = this.custom.to ? new Date(this.custom.to) : new Date(2026, 10, 10), days = this.nDays();
+      const dateAt = i => new Date(end.getTime() - (days - 1 - (days > 31 ? i * 7 : i)) * 864e5);
+      if (days <= 7) return s.map((_, i) => ({ p: i / (n - 1) * 100, l: dateAt(i).toLocaleString('en-US', { weekday: 'short' }) }));
+      if (days <= 31) return s.map((_, i) => i).filter(i => i % 5 === 0 || i === n - 1).map(i => ({ p: i / (n - 1) * 100, l: dateAt(i).toLocaleString('en-US', { month: 'short', day: 'numeric' }) }));
+      const out = []; let last = -1; s.forEach((_, i) => { const d = dateAt(i); if (d.getMonth() !== last) { last = d.getMonth(); out.push({ p: i / (n - 1) * 100, l: d.toLocaleString('en-US', { month: 'short' }) }); } }); return out;
+    },
+    pts(s) { const max = this.yMax(); return s.map((v, i) => [i / (s.length - 1) * 600, 220 - v / max * 220]); },
+    line(s) { return this.pts(s).map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' '); },
+    area(s) { return this.line(s) + ' L600 220 L0 220 Z'; },
+    fmt(n) { return Math.round(n).toLocaleString('en-US'); },
+    rangeLabel() { if (this.custom.to) { const f = v => new Date(v + 'T00:00').toLocaleString('en-US', { month: 'short', day: 'numeric' }); return `${f(this.custom.from)} to ${f(this.custom.to)}`; } return 'last ' + this.range.replace('d', ' days'); },
+    members() {
+      const all = [
+        { n: '0042', tier: 1, v: 4, spent: 31.5, bal: 1.58, last: 'Today', loc: 'Downtown' },
+        { n: '0017', tier: 2, v: 11, spent: 96.4, bal: 4.82, last: 'Today', loc: 'Riverside' },
+        { n: '0031', tier: 0, v: 2, spent: 8.7, bal: .44, last: 'Yesterday', loc: 'Downtown' },
+        { n: '0009', tier: 2, v: 8, spent: 71.2, bal: 3.56, last: '2 days ago', loc: 'Downtown' },
+        { n: '0038', tier: 0, v: 1, spent: 5, bal: .25, last: 'Today', loc: 'Riverside' },
+        { n: '0055', tier: 1, v: 5, spent: 44, bal: 2.2, last: '4 days ago', loc: 'Riverside' },
+        { n: '0061', tier: 0, v: 2, spent: 12.4, bal: .62, last: '5 days ago', loc: 'Downtown' },
+        { n: '0072', tier: 1, v: 3, spent: 22.8, bal: 1.14, last: '1 week ago', loc: 'Downtown' },
+        { n: '0088', tier: 2, v: 14, spent: 128.6, bal: 6.43, last: 'Today', loc: 'Downtown' },
+        { n: '0093', tier: 0, v: 1, spent: 4.5, bal: .23, last: 'Today', loc: 'Riverside' },
+        { n: '0104', tier: 1, v: 4, spent: 36.1, bal: 1.81, last: '3 days ago', loc: 'Riverside' },
+        { n: '0117', tier: 0, v: 2, spent: 9.9, bal: .5, last: '2 weeks ago', loc: 'Downtown' },
+        { n: '0126', tier: 2, v: 7, spent: 64.3, bal: 3.22, last: 'Yesterday', loc: 'Downtown' },
+      ];
+      return all.filter(c => (!this.q || c.n.includes(this.q)) && (this.lvl === 'All levels' || TIERS[c.tier].name === this.lvl));
+    },
+  };
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Counter · Fairly prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/base.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/setup.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>@keyframes scan{0%,100%{top:15%}50%{top:82%}}</style>
+</head>
+<body class="bg-cream font-sans text-ink">
+<div x-data="cashier()" class="min-h-screen p-6 lg:p-10 flex flex-col items-center gap-8">
+
+  <div class="w-full max-w-[980px] flex flex-wrap items-end justify-between gap-4">
+    <div><h1 class="text-5xl font-extrabold tracking-tight">Counter</h1>
+      <p class="text-lg text-ink/60">Any tablet or phone at the till. Scan, type, done. <span class="demo">(demo · test money)</span></p></div>
+    <div class="flex gap-2">
+      <div class="flex p-1 rounded-xl bg-white border border-ink/10 text-sm font-semibold">
+        <button @click="device='tablet'" class="h-10 px-4 rounded-lg flex items-center gap-2 transition" :class="device==='tablet' ? 'bg-ink text-white' : 'text-ink/60 hover:text-ink'"><span x-html="icon('tablet','w-5 h-5')"></span>Tablet</button>
+        <button @click="device='phone'" class="h-10 px-4 rounded-lg flex items-center gap-2 transition" :class="device==='phone' ? 'bg-ink text-white' : 'text-ink/60 hover:text-ink'"><span x-html="icon('phone','w-5 h-5')"></span>Phone</button>
+      </div>
+      <button @click="reset(); guide=1" class="h-12 px-5 rounded-xl border border-ink/15 bg-white font-semibold text-sm hover:border-ink/40 transition">Show guide</button>
+    </div>
+  </div>
+
+  <!-- Device -->
+  <div class="relative bg-ink p-3 shadow-card transition-all duration-500" :class="device==='tablet' ? 'w-[980px] h-[640px] rounded-[40px]' : 'w-[390px] h-[820px] rounded-[48px]'">
+    <div class="relative w-full h-full bg-ink2 text-white overflow-hidden" :class="device==='tablet' ? 'rounded-[30px] grid grid-cols-[1fr_400px]' : 'rounded-[38px] flex flex-col'" x-ref="screen">
+
+      <!-- CUSTOMER SIDE -->
+      <div class="flex flex-col" :class="device==='tablet' ? 'p-8' : 'px-5 pt-12 pb-3'">
+        <header class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="w-10 h-10 rounded-lg bg-coral text-ink grid place-items-center" x-html="icon('cup','w-5 h-5')"></span>
+            <div><p class="font-bold leading-tight">Corner Café</p><p class="text-xs text-white/50">Downtown · Counter 1</p></div>
+          </div>
+          <div class="text-right">
+            <p class="text-[11px] text-white/50">Rewards today</p>
+            <div class="flex items-center gap-2 mt-1"><div class="w-20 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full bg-sun rounded-full transition-all" :style="{width: (today/30*100)+'%'}"></div></div><span class="text-xs font-semibold tabular-nums" x-text="money(today)+' / $30'"></span></div>
+          </div>
+        </header>
+
+        <div x-show="step==='scan'" class="flex-1 flex flex-col items-center justify-center" :class="device==='phone' && 'py-4'">
+          <div class="relative rounded-2xl bg-black/40 overflow-hidden" :class="device==='tablet' ? 'w-72 h-72' : 'w-52 h-52'">
+            <span class="absolute left-4 top-4 w-10 h-10 border-l-4 border-t-4 border-coral rounded-tl-xl"></span>
+            <span class="absolute right-4 top-4 w-10 h-10 border-r-4 border-t-4 border-coral rounded-tr-xl"></span>
+            <span class="absolute left-4 bottom-4 w-10 h-10 border-l-4 border-b-4 border-coral rounded-bl-xl"></span>
+            <span class="absolute right-4 bottom-4 w-10 h-10 border-r-4 border-b-4 border-coral rounded-br-xl"></span>
+            <span class="absolute inset-x-8 h-0.5 rounded-full bg-coral shadow-[0_0_18px_#F2654F] animate-[scan_2.2s_ease-in-out_infinite]"></span>
+          </div>
+          <p class="mt-5 text-xl font-bold">Scan the customer's code</p>
+          <div class="flex gap-2 mt-4">
+            <button @click="scan(true)" class="h-10 px-4 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-semibold transition">Maria's card</button>
+            <button @click="scan(false)" class="h-10 px-4 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-semibold transition">New customer</button>
+          </div>
+        </div>
+
+        <div x-show="step!=='scan'" x-cloak class="flex-1 flex flex-col justify-center" :class="device==='phone' && 'py-3'">
+          <div :class="device==='tablet' ? 'w-[400px]' : 'w-full'">
+            <div class="relative animate-pop" x-html="cardArt({balance, visits, tier:tierFor(visits), number: isNew ? '0039' : '0042'})"></div>
+            <div class="flex items-center gap-3 mt-4">
+              <span class="w-9 h-9 rounded-full grid place-items-center font-bold" :class="isNew ? 'bg-mint text-ink' : 'bg-lilac text-ink'" x-text="isNew ? '+' : 'M'"></span>
+              <div class="flex-1"><p class="font-bold" x-text="isNew ? 'New member' : 'Maria'"></p><p class="text-xs text-white/50" x-text="isNew ? 'Card is created with this purchase' : visits + ' visits · ' + TIERS[tierFor(visits)].name"></p></div>
+              <button @click="reset()" class="h-9 px-3 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold transition">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KEYPAD SIDE -->
+      <div class="bg-ink flex flex-col" :class="device==='tablet' ? 'p-6' : 'px-5 pt-4 pb-6 rounded-t-3xl'">
+        <div class="grid grid-cols-2 p-1 rounded-xl bg-white/10 text-sm font-semibold">
+          <button @click="mode='buy'; cents=0" class="h-9 rounded-lg transition" :class="mode==='buy' ? 'bg-white text-ink' : 'text-white/60'">Purchase</button>
+          <button @click="mode='code'; code=''" class="h-9 rounded-lg transition" :class="mode==='code' ? 'bg-white text-ink' : 'text-white/60'">Balance code</button>
+        </div>
+
+        <template x-if="mode==='buy'"><div class="mt-4">
+          <div class="flex items-end justify-between">
+            <p class="font-extrabold tracking-tight tabular-nums" :class="device==='tablet' ? 'text-6xl' : 'text-5xl'" x-text="'$' + (cents/100).toFixed(2)"></p>
+            <span x-show="cents>0" class="h-8 px-2.5 rounded-lg bg-sun text-ink text-sm font-bold flex items-center gap-1"><span x-html="coin('w-5 h-5')"></span><span x-text="'+' + money(cents/100*0.05)"></span></span>
+          </div>
+          <div class="flex gap-1.5 mt-3 overflow-x-auto no-scrollbar">
+            <template x-for="c in cats"><button @click="cat = cat===c[0] ? null : c[0]" class="h-8 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 shrink-0 border transition" :class="cat===c[0] ? 'bg-white text-ink border-white' : 'border-white/15 text-white/70 hover:border-white/40'"><span x-html="icon(c[1],'w-3.5 h-3.5')"></span><span x-text="c[0]"></span></button></template>
+          </div>
+        </div></template>
+        <template x-if="mode==='code'"><div class="mt-4">
+          <p class="text-sm text-white/50">Code on the customer's phone</p>
+          <div class="flex gap-2 mt-2"><template x-for="i in 4"><span class="w-14 h-16 rounded-xl bg-white/10 grid place-items-center text-3xl font-extrabold" x-text="code[i-1] || ''"></span></template></div>
+          <p class="mt-2 text-sm h-5" :class="code.length===4 ? 'text-mint' : 'text-white/40'" x-text="code.length===4 ? 'Valid: take $0.50 off the bill' : 'Type the 4 characters'"></p>
+        </div></template>
+
+        <div class="grid grid-cols-3 gap-2 mt-auto pt-3">
+          <template x-for="k in (mode==='buy' ? ['1','2','3','4','5','6','7','8','9','00','0','del'] : ['7','K','4','Q','A','B','1','2','3','X','0','del'])">
+            <button @click="press(k)" :disabled="step==='scan' && mode==='buy'" class="rounded-xl bg-white/[.07] hover:bg-white/15 active:scale-95 transition text-2xl font-semibold disabled:opacity-25" :class="device==='tablet' ? 'h-14' : 'h-12'" x-html="k==='del' ? icon('back','w-6 h-6 mx-auto') : k"></button>
+          </template>
+        </div>
+        <button @click="confirm()" :disabled="mode==='buy' ? (step==='scan' || cents===0) : code.length<4" class="mt-3 h-14 rounded-xl bg-coral text-ink text-lg font-bold flex items-center justify-between pl-6 pr-2 hover:brightness-105 transition disabled:opacity-25">
+          <span x-text="mode==='code' ? 'Confirm' : (isNew ? 'Create card and add' : 'Add to card')"></span>
+          <span class="w-10 h-10 rounded-lg bg-ink text-coral grid place-items-center" x-html="icon('check','w-5 h-5')"></span>
+        </button>
+      </div>
+
+      <!-- DONE -->
+      <div x-show="step==='done'" x-cloak class="absolute inset-0 bg-mint text-ink grid place-items-center text-center px-6" x-ref="party">
+        <div>
+          <div class="mx-auto w-24 h-24 animate-pop" x-html="coin('w-24 h-24')"></div>
+          <p class="mt-5 text-5xl font-extrabold tracking-tight" x-text="doneTitle"></p>
+          <p class="text-lg mt-2" x-text="doneSub"></p>
+          <button @click="reset()" class="mt-8 h-14 px-8 rounded-xl bg-ink text-white font-semibold hover:bg-black transition">Next customer</button>
+        </div>
+      </div>
+
+      <!-- GUIDE: clear scrim + one highlighted step at a time -->
+      <div x-show="guide" x-cloak class="absolute inset-0 z-40 bg-black/85 flex items-center justify-center p-8">
+        <div class="w-full max-w-md bg-white text-ink rounded-2xl p-7 shadow-card">
+          <div class="flex items-center gap-2"><template x-for="i in 3"><span class="h-1.5 flex-1 rounded-full" :class="i<=guide ? 'bg-coral' : 'bg-ink/10'"></span></template></div>
+          <div class="flex items-center gap-4 mt-6">
+            <span class="w-14 h-14 rounded-full bg-ink text-white grid place-items-center text-2xl font-extrabold" x-text="guide"></span>
+            <div><p class="text-2xl font-extrabold" x-text="guides[guide-1]?.t"></p><p class="text-ink/60" x-text="guides[guide-1]?.d"></p></div>
+          </div>
+          <div class="mt-6 rounded-xl bg-bo-bg p-4 flex items-center gap-3 text-sm font-semibold">
+            <span class="w-9 h-9 rounded-lg bg-ink text-white grid place-items-center" x-html="icon(guides[guide-1]?.i || 'qr','w-5 h-5')"></span><span x-text="guides[guide-1]?.where"></span>
+          </div>
+          <div class="mt-6 flex justify-between">
+            <button @click="guide=0" class="h-11 px-4 rounded-lg font-semibold text-ink/50 hover:text-ink">Skip</button>
+            <button @click="guide = guide<3 ? guide+1 : 0" class="h-11 px-6 rounded-lg bg-ink text-white font-semibold hover:bg-black transition" x-text="guide<3 ? 'Next' : 'Start'"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function cashier() {
+  return {
+    device: 'tablet', guide: 1, step: 'scan', mode: 'buy', isNew: false, cents: 0, code: '', cat: null,
+    balance: 0.5, visits: 2, today: 4.2, doneTitle: '', doneSub: '',
+    cats: [['Coffee','cup'],['Food','burger'],['Bakery','cookie'],['Retail','bag']],
+    guides: [
+      { t: 'Scan the code', d: "The customer shows a code on their phone.", where: 'Camera area on the left (top on phones)', i: 'qr' },
+      { t: 'Type the total', d: 'Optionally tag what they bought.', where: 'Keypad on the right (bottom on phones)', i: 'tag' },
+      { t: 'Tap Add to card', d: '5% goes to their card instantly.', where: 'Coral button under the keypad', i: 'check' },
+    ],
+    scan(existing) { this.isNew = !existing; if (this.isNew) { this.balance = 0; this.visits = 0; } this.step = 'amount'; this.mode = 'buy'; },
+    press(k) {
+      if (this.mode === 'code') { if (k === 'del') this.code = this.code.slice(0, -1); else if (this.code.length < 4) this.code += k; return; }
+      if (k === 'del') this.cents = Math.floor(this.cents / 10);
+      else this.cents = Math.min(100000, Number(String(this.cents) + k));
+    },
+    confirm() {
+      if (this.mode === 'code') { this.doneTitle = '$0.50 off'; this.doneSub = 'Balance used. Charge the rest as usual.'; this.step = 'done'; return; }
+      const before = tierFor(this.visits), cb = +(this.cents / 100 * 0.05).toFixed(2);
+      this.balance = +(this.balance + cb).toFixed(2); this.visits++; this.today += cb;
+      const up = tierFor(this.visits) > before;
+      this.doneTitle = '+' + money(cb);
+      this.doneSub = up ? `Maria reached ${TIERS[tierFor(this.visits)].name}` : (this.isNew ? 'New card created' : 'Added to the card') + (this.cat ? ` · ${this.cat}` : '');
+      this.step = 'done';
+      this.$nextTick(() => confetti(this.$refs.party, up ? 40 : 18));
+    },
+    reset() { this.step = 'scan'; this.cents = 0; this.code = ''; this.mode = 'buy'; this.cat = null; if (this.isNew) { this.balance = 0.5; this.visits = 2; } this.isNew = false; },
+  };
+}
+</script>
+</body>
+</html>

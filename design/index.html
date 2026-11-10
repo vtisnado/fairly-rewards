@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fairly · design prototypes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/base.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/setup.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-cream font-sans text-ink">
+<main x-data class="max-w-6xl mx-auto px-6 py-14">
+  <div class="flex items-center gap-3"><span x-html="coin('w-12 h-12')"></span><h1 class="text-6xl font-black tracking-tight" x-text="BRAND"></h1></div>
+  <p class="text-xl text-ink/60 mt-3">Design prototypes. Review these before any app code is written.</p>
+
+  <div class="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <a href="landing.html" class="rounded-xl3 bg-ink text-white p-7 lg:row-span-2 flex flex-col min-h-[300px] hover:-translate-y-1 transition">
+      <p class="text-white/50 font-semibold">Judges and businesses</p><p class="text-4xl font-extrabold mt-1">Landing</p>
+      <div class="mt-auto rotate-[-5deg]" x-html="cardArt({balance:3.75,visits:4,tier:1})"></div>
+    </a>
+    <a href="customer.html" class="rounded-xl3 bg-coral p-7 hover:-translate-y-1 transition"><span x-html="icon('qr','w-9 h-9')"></span><p class="text-4xl font-extrabold mt-8">Customer</p><p class="font-semibold text-ink/60">Join, card, level up, use, sell</p></a>
+    <a href="cashier.html" class="rounded-xl3 bg-sun p-7 hover:-translate-y-1 transition"><span x-html="icon('tablet','w-9 h-9')"></span><p class="text-4xl font-extrabold mt-8">Counter</p><p class="font-semibold text-ink/60">Scan, keypad, balance codes</p></a>
+    <a href="merchant.html" class="rounded-xl3 bg-lilac p-7 hover:-translate-y-1 transition"><span x-html="icon('chart','w-9 h-9')"></span><p class="text-4xl font-extrabold mt-8">Business</p><p class="font-semibold text-ink/60">Setup wizard and dashboard</p></a>
+    <a href="market.html" class="rounded-xl3 bg-mint p-7 hover:-translate-y-1 transition"><span x-html="icon('tag','w-9 h-9')"></span><p class="text-4xl font-extrabold mt-8">Market</p><p class="font-semibold text-ink/60">Buy cards with value inside</p></a>
+  </div>
+
+  <h2 class="text-4xl font-extrabold tracking-tight mt-16">Who uses what</h2>
+  <img src="assets/roles.svg" alt="Roles and flows" class="mt-5 w-full rounded-xl3 shadow-soft">
+
+  <h2 class="text-4xl font-extrabold tracking-tight mt-16">Palette</h2>
+  <div class="mt-5 grid grid-cols-3 md:grid-cols-6 gap-3">
+    <template x-for="c in [['Ink','#17161A','text-white'],['Cream','#FFF6EC',''],['Coral','#FF6B57',''],['Sun','#FFE24A',''],['Lilac','#C9C1FF',''],['Mint','#8FE0BF','']]">
+      <div class="h-32 rounded-xl3 p-4 flex flex-col justify-end shadow-soft" :class="c[2]" :style="{background:c[1]}"><p class="font-bold" x-text="c[0]"></p><p class="text-sm opacity-60" x-text="c[1]"></p></div>
+    </template>
+  </div>
+  <p class="mt-6 text-ink/60 font-semibold">Type: Outfit, 400 to 900. Rules in docs/ux.md.</p>
+</main>
+</body>
+</html>

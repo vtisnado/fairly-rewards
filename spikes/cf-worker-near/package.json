@@ -1,0 +1,15 @@
+{
+  "name": "spike-cf-worker-near",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --ip 0.0.0.0 --port 8787",
+    "dry": "wrangler deploy --dry-run --outdir dist"
+  },
+  "dependencies": {
+    "near-api-js": "7.4.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.150.0"
+  }
+}

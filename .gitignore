@@ -1,0 +1,29 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+**/near-credentials/
+.near-credentials/
+
+# Submission payload (personal data)
+submission*.json
+
+# Build output
+target/
+node_modules/
+.next/
+out/
+dist/
+*.wasm
+!contracts/**/res/*.wasm
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Wrangler local secrets and state
+.dev.vars
+.wrangler/

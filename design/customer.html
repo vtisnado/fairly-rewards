@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Customer · Fairly prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/base.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/setup.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-cream font-sans text-ink">
+<div x-data="customer()" class="min-h-screen flex flex-col xl:flex-row gap-12 items-center xl:items-start justify-center p-6 lg:p-12">
+
+  <div class="phone shrink-0"><div class="phone-screen bg-cream" x-ref="screen">
+    <div class="phone-notch"></div>
+
+    <!-- JOIN -->
+    <section x-show="screen==='join'" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-x-8" class="absolute inset-0 bg-coral flex flex-col px-6 pt-16 pb-8 overflow-hidden">
+      <div class="flex items-center gap-2 text-ink font-semibold">
+        <span class="w-9 h-9 rounded-full bg-ink text-coral grid place-items-center" x-html="icon('cup','w-5 h-5')"></span>Corner Café
+      </div>
+      <div class="relative h-[300px] mt-6">
+        <div class="absolute left-2 right-10 top-10 rotate-[-9deg] animate-float" style="--r:-9deg" x-html="cardArt({shop:'bakery',balance:4.2,visits:4,tier:1})"></div>
+        <div class="absolute left-8 right-2 top-24 rotate-[5deg] animate-float [animation-delay:-2s]" style="--r:5deg" x-html="cardArt({shop:'barber',balance:1.25,visits:1})"></div>
+        <div class="absolute -left-2 top-2 animate-float [animation-delay:-1s]" x-html="coin('w-14 h-14')"></div>
+        <div class="absolute right-0 top-0 animate-float [animation-delay:-3s]" x-html="coin('w-10 h-10')"></div>
+        <div class="absolute right-6 bottom-0 animate-float [animation-delay:-4s]" x-html="coin('w-12 h-12')"></div>
+      </div>
+      <h1 class="mt-8 text-[44px] leading-[.95] font-extrabold tracking-tight">Get 5% back.<br>Every visit.</h1>
+      <p class="mt-3 text-ink/75 text-lg">Your card keeps the money.</p>
+      <button @click="join()" class="mt-auto h-16 rounded-full bg-ink text-white text-lg font-semibold flex items-center justify-between pl-7 pr-2">
+        <span x-text="loading ? 'Creating your card…' : 'Get my card'"></span>
+        <span class="w-12 h-12 rounded-full bg-sun text-ink grid place-items-center" x-html="icon('arrow','w-6 h-6')"></span>
+      </button>
+      <p class="text-center text-sm text-ink/70 mt-3">No app. No sign-up. <span class="demo">(demo · test money)</span></p>
+    </section>
+
+    <!-- ONBOARDING: horizontal carousel, slides glide like a native app -->
+    <section x-show="screen==='intro'" x-cloak
+      x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-x-8" x-transition:enter-end="opacity-100 translate-x-0"
+      x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-x-8"
+      class="absolute inset-0 overflow-hidden">
+      <div class="absolute inset-0 transition-colors duration-500" :class="slides[slide].bg"></div>
+      <div class="relative h-full flex flex-col pt-16 pb-8">
+        <button @click="screen='home'; tour=2" class="self-end mr-6 text-sm font-semibold opacity-60 hover:opacity-100 transition">Skip</button>
+        <div class="flex-1 overflow-hidden">
+          <div class="flex h-full transition-transform duration-500 ease-[cubic-bezier(.22,.8,.2,1)]" :style="{transform:`translateX(-${slide*100}%)`}">
+            <div class="w-full shrink-0 px-6 flex flex-col">
+              <div class="flex-1 grid place-items-center"><div class="w-full transition duration-700" :class="slide===0 ? 'opacity-100 scale-100' : 'opacity-0 scale-90'" x-html="cardArt({balance:0,visits:0,size:'lg'})"></div></div>
+              <h2 class="text-4xl font-extrabold tracking-tight leading-none" x-text="slides[0].t"></h2><p class="mt-2 text-lg opacity-75" x-text="slides[0].d"></p>
+            </div>
+            <div class="w-full shrink-0 px-6 flex flex-col">
+              <div class="flex-1 grid place-items-center"><div class="w-60 h-60 bg-white rounded-2xl p-5 shadow-card transition duration-700" :class="slide===1 ? 'opacity-100 rotate-0' : 'opacity-0 rotate-6'" x-html="fakeQR('maria')"></div></div>
+              <h2 class="text-4xl font-extrabold tracking-tight leading-none" x-text="slides[1].t"></h2><p class="mt-2 text-lg opacity-75" x-text="slides[1].d"></p>
+            </div>
+            <div class="w-full shrink-0 px-6 flex flex-col">
+              <div class="flex-1 relative grid place-items-center">
+                <div class="text-7xl font-extrabold tracking-tight transition duration-700" :class="slide===2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'">+$0.25</div>
+                <div class="absolute left-4 top-1/4 animate-float" x-html="coin('w-16 h-16')"></div>
+                <div class="absolute right-6 bottom-1/4 animate-float [animation-delay:-2s]" x-html="coin('w-12 h-12')"></div>
+              </div>
+              <h2 class="text-4xl font-extrabold tracking-tight leading-none" x-text="slides[2].t"></h2><p class="mt-2 text-lg opacity-75" x-text="slides[2].d"></p>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between mt-8 px-6">
+          <div class="flex gap-1.5"><template x-for="i in 3"><button @click="slide=i-1" class="h-2 rounded-full transition-all duration-300" :class="i-1===slide ? 'w-7 bg-ink' : 'w-2 bg-ink/25'"></button></template></div>
+          <button @click="slide<2 ? slide++ : (screen='home', tour=2)" class="w-16 h-16 rounded-full bg-ink text-white grid place-items-center hover:scale-105 active:scale-95 transition" x-html="icon('arrow','w-7 h-7')"></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOME -->
+    <section x-show="screen==='home'" x-cloak x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute inset-0 flex flex-col">
+      <div class="flex-1 overflow-y-auto no-scrollbar px-5 pt-16 pb-28">
+        <header class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="w-11 h-11 rounded-full bg-lilac grid place-items-center font-bold">M</span>
+            <div><p class="text-xs text-ink/55">Corner Café club</p><p class="font-bold text-lg leading-tight">Hi, Maria</p></div>
+          </div>
+          <button @click="sheet='help'" class="w-11 h-11 rounded-full bg-white shadow-soft grid place-items-center font-bold">?</button>
+        </header>
+
+        <div class="mt-5 relative">
+          <div :class="bump && 'animate-pop'" x-html="cardArt({balance:shown,visits,tier:tierFor(visits)})"></div>
+          <template x-for="f in floats" :key="f.id"><span class="absolute left-1/2 top-1/3 -translate-x-1/2 text-2xl font-extrabold text-ink bg-sun rounded-full px-4 py-1 animate-rise" x-text="'+'+money(f.v)"></span></template>
+        </div>
+
+        <!-- Progress -->
+        <div class="mt-4 rounded-xl2 bg-ink text-white p-4 flex items-center gap-4">
+          <div class="relative w-14 h-14 shrink-0">
+            <svg viewBox="0 0 36 36" class="w-14 h-14 -rotate-90"><circle cx="18" cy="18" r="15" fill="none" stroke="#ffffff22" stroke-width="4"/><circle cx="18" cy="18" r="15" fill="none" :stroke="nextTier() ? nextTier().color : '#FFC23D'" stroke-width="4" stroke-linecap="round" :stroke-dasharray="`${progress()*94} 94`" class="transition-all duration-700"/></svg>
+            <span class="absolute inset-0 grid place-items-center" :style="`color:${nextTier() ? nextTier().color : '#FFC23D'}`" x-html="icon('star','w-5 h-5')"></span>
+          </div>
+          <div class="flex-1">
+            <p class="font-bold" x-text="nextTier() ? `${nextTier().min - visits} ${nextTier().min - visits === 1 ? 'visit' : 'visits'} to ${nextTier().name}` : 'You reached Gold'"></p>
+            <p class="text-sm text-white/60" x-text="nextTier() ? 'Unlocks: ' + nextTier().perk : 'Free drink every month'"></p>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="grid grid-cols-2 gap-3 mt-3">
+          <button @click="sheet='use'" class="rounded-xl2 bg-sun p-4 text-left">
+            <span class="w-10 h-10 rounded-full bg-ink text-sun grid place-items-center" x-html="icon('tag','w-5 h-5')"></span>
+            <p class="mt-6 font-bold leading-tight">Use balance</p><p class="text-sm text-ink/60">On your next order</p>
+          </button>
+          <button @click="sheet='sell'" class="rounded-xl2 bg-lilac p-4 text-left">
+            <span class="w-10 h-10 rounded-full bg-ink text-lilac grid place-items-center" x-html="icon('arrow','w-5 h-5 -rotate-45')"></span>
+            <p class="mt-6 font-bold leading-tight">Sell card</p><p class="text-sm text-ink/60">Value goes with it</p>
+          </button>
+        </div>
+
+        <!-- Perks -->
+        <div class="flex items-end justify-between mt-6"><h3 class="text-xl font-bold">Perks</h3><span class="text-sm text-ink/50" x-text="`${tierFor(visits)+1} of 3 unlocked`"></span></div>
+        <div class="flex gap-3 overflow-x-auto no-scrollbar mt-3 -mx-5 px-5">
+          <template x-for="(t,i) in TIERS"><div class="shrink-0 w-36 rounded-xl2 p-4 relative" :class="tierFor(visits)>=i ? 'bg-white shadow-soft' : 'bg-ink/5'">
+            <span class="w-12 h-12 rounded-full grid place-items-center" :style="`background:${t.color}33;color:${t.color}`" x-html="icon(t.icon,'w-7 h-7')"></span>
+            <p class="font-bold mt-4 leading-tight" x-text="t.perk"></p>
+            <p class="text-xs mt-1 font-semibold" :class="tierFor(visits)>=i ? 'text-[#1F9D6B]' : 'text-ink/45'" x-text="tierFor(visits)>=i ? 'Ready to claim' : t.name + ' level'"></p>
+          </div></template>
+        </div>
+
+        <!-- Activity -->
+        <h3 class="text-xl font-bold mt-6">Activity</h3>
+        <ul class="mt-2 space-y-2">
+          <template x-for="a in activity" :key="a.id"><li class="bg-white rounded-xl2 p-3 flex items-center gap-3 shadow-soft">
+            <span class="w-11 h-11 rounded-full grid place-items-center" :class="a.v>0 ? 'bg-coral-soft text-coral' : 'bg-lilac-soft text-ink'" x-html="icon(a.v>0?'cup':'tag','w-5 h-5')"></span>
+            <div class="flex-1"><p class="font-semibold leading-tight" x-text="a.t"></p><p class="text-xs text-ink/50" x-text="a.s"></p></div>
+            <span class="rounded-full px-3 py-1 text-sm font-bold" :class="a.v>0 ? 'bg-sun' : 'bg-ink/5'" x-text="(a.v>0?'+':'') + money(a.v)"></span>
+          </li></template>
+          <li x-show="!activity.length" class="rounded-xl2 border-2 border-dashed border-ink/10 p-5 text-center text-ink/50">Your first visit shows up here</li>
+        </ul>
+      </div>
+
+      <!-- Bottom nav -->
+      <nav class="absolute bottom-0 inset-x-0 h-24 bg-white rounded-t-xl3 shadow-[0_-10px_30px_-15px_rgba(0,0,0,.2)] grid grid-cols-5 items-center text-ink/40">
+        <button class="grid place-items-center text-ink" x-html="icon('home')"></button>
+        <button @click="sheet='perks'" class="grid place-items-center" x-html="icon('star')"></button>
+        <button @click="screen='code'" class="grid place-items-center"><span class="w-16 h-16 -mt-10 rounded-full bg-coral text-ink grid place-items-center shadow-card ring-8 ring-cream" x-html="icon('qr','w-7 h-7')"></span></button>
+        <button class="grid place-items-center" x-html="icon('list')"></button>
+        <button class="grid place-items-center" x-html="icon('tag')"></button>
+      </nav>
+    </section>
+
+    <!-- CODE -->
+    <section x-show="screen==='code'" x-cloak x-transition:enter="transition ease-out duration-400" x-transition:enter-start="opacity-0 translate-y-full" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-full" class="absolute inset-0 z-20 bg-ink text-white flex flex-col px-6 pt-16 pb-8">
+      <button @click="screen='home'" class="w-11 h-11 rounded-full bg-white/10 grid place-items-center" x-html="icon('back','w-5 h-5')"></button>
+      <p class="mt-6 text-3xl font-extrabold tracking-tight leading-none">Show this<br>at the counter</p>
+      <div class="mt-8 bg-white rounded-xl3 p-6 mx-auto w-72 h-72 animate-pop" x-html="fakeQR('maria-cafe')"></div>
+      <div class="mt-auto rounded-xl2 bg-white/10 p-4 flex items-center gap-3">
+        <span class="w-11 h-11 rounded-full bg-coral text-ink grid place-items-center" x-html="icon('cup','w-5 h-5')"></span>
+        <div class="flex-1"><p class="font-semibold">Corner Café · No. 0042</p><p class="text-sm text-white/60" x-text="money(balance) + ' on card'"></p></div>
+      </div>
+      <button @click="purchase(5); screen='home'" class="mt-3 h-12 rounded-full border border-white/20 text-sm text-white/70">Cashier scans it: $5.00 purchase</button>
+    </section>
+
+    <!-- LEVEL UP -->
+    <div x-show="levelUp" x-cloak class="absolute inset-0 z-40 flex flex-col items-center justify-center px-8 text-center" :style="{ background: TIERS[tierFor(visits)].color }" x-ref="party">
+      <div class="w-32 h-32 rounded-full bg-white/40 grid place-items-center animate-pop" x-html="icon(TIERS[tierFor(visits)].icon,'w-16 h-16')"></div>
+      <p class="mt-8 text-lg font-semibold">You reached</p>
+      <p class="text-6xl font-extrabold tracking-tight" x-text="TIERS[tierFor(visits)].name"></p>
+      <p class="mt-4 text-lg">Unlocked: <b x-text="TIERS[tierFor(visits)].perk"></b></p>
+      <button @click="levelUp=false" class="mt-10 h-14 px-10 rounded-full bg-ink text-white font-semibold">Claim perk</button>
+    </div>
+
+    <!-- SHEETS -->
+    <div x-show="sheet" x-cloak class="absolute inset-0 z-30 bg-ink/50 flex items-end" @click.self="sheet=null">
+      <div class="sheet-enter bg-cream w-full rounded-t-xl3 px-6 pt-3 pb-8">
+        <span class="block mx-auto w-12 h-1.5 rounded-full bg-ink/15 mb-5"></span>
+
+        <template x-if="sheet==='use'"><div>
+          <p class="text-sm text-ink/55">Available</p>
+          <p class="text-5xl font-extrabold tracking-tight" x-text="money(balance)"></p>
+          <div class="grid grid-cols-3 gap-2 mt-5">
+            <template x-for="p in [0.25,0.5,1]"><button @click="useAmt=Math.min(p*balance*2,balance)" class="h-12 rounded-full bg-white font-semibold shadow-soft" x-text="['Some','Half','All'][[0.25,0.5,1].indexOf(p)]"></button></template>
+          </div>
+          <input type="range" min="0" :max="balance" step="0.05" x-model.number="useAmt" class="w-full mt-6 accent-ink">
+          <button @click="useBalance()" :disabled="useAmt<=0" class="mt-5 w-full h-14 rounded-full bg-ink text-white font-semibold disabled:opacity-30" x-text="'Take ' + money(useAmt) + ' off my bill'"></button>
+        </div></template>
+
+        <template x-if="sheet==='code'"><div class="text-center">
+          <span class="mx-auto w-16 h-16 rounded-full bg-mint grid place-items-center" x-html="icon('check','w-8 h-8')"></span>
+          <p class="mt-4 text-ink/60">Tell the cashier this code</p>
+          <p class="text-6xl font-extrabold tracking-[.2em] mt-1">7K4Q</p>
+          <p class="mt-2 font-semibold" x-text="money(lastUse) + ' off your bill'"></p>
+          <button @click="sheet=null" class="mt-6 w-full h-14 rounded-full bg-ink text-white font-semibold">Done</button>
+        </div></template>
+
+        <template x-if="sheet==='sell'"><div>
+          <h3 class="text-3xl font-extrabold tracking-tight">Sell your card</h3>
+          <div class="grid grid-cols-2 gap-3 mt-4">
+            <div class="rounded-xl2 bg-sun p-4"><p class="text-sm text-ink/60">Value inside</p><p class="text-3xl font-extrabold" x-text="money(balance)"></p></div>
+            <div class="rounded-xl2 p-4" :style="`background:${TIERS[tierFor(visits)].color}`"><p class="text-sm text-ink/60">Level</p><p class="text-3xl font-extrabold" x-text="TIERS[tierFor(visits)].name"></p></div>
+          </div>
+          <div class="mt-5 flex items-end justify-between"><p class="font-semibold">Your price</p><p class="text-3xl font-extrabold" x-text="money(price)"></p></div>
+          <input type="range" min="0.5" max="20" step="0.5" x-model.number="price" class="w-full mt-2 accent-ink">
+          <div class="mt-3 flex justify-between text-sm"><span class="text-ink/60">You get</span><b x-text="money(price*0.95)"></b></div>
+          <div class="flex justify-between text-sm"><span class="text-ink/60">Corner Café gets</span><b x-text="money(price*0.05)"></b></div>
+          <button @click="sheet='listed'" class="mt-5 w-full h-14 rounded-full bg-ink text-white font-semibold">List for sale</button>
+        </div></template>
+
+        <template x-if="sheet==='listed'"><div class="text-center">
+          <span class="mx-auto w-16 h-16 rounded-full bg-lilac grid place-items-center" x-html="icon('tag','w-8 h-8')"></span>
+          <h3 class="text-3xl font-extrabold tracking-tight mt-4">Listed</h3>
+          <p class="text-ink/60 mt-1">We will let you know when someone buys it.</p>
+          <button @click="sheet=null" class="mt-6 w-full h-14 rounded-full bg-ink text-white font-semibold">OK</button>
+          <button @click="sheet=null" class="mt-2 w-full h-12 rounded-full text-coral-dark font-semibold">Cancel listing</button>
+        </div></template>
+
+        <template x-if="sheet==='perks'"><div>
+          <h3 class="text-3xl font-extrabold tracking-tight">Levels</h3>
+          <div class="mt-4 space-y-2">
+            <template x-for="(t,i) in TIERS"><div class="rounded-xl2 p-4 flex items-center gap-3" :style="`background:${t.color}${tierFor(visits)>=i?'':'40'}`">
+              <span class="w-11 h-11 rounded-full bg-white/60 grid place-items-center" x-html="icon(t.icon,'w-6 h-6')"></span>
+              <div class="flex-1"><p class="font-bold" x-text="t.name"></p><p class="text-sm" x-text="t.perk"></p></div>
+              <span class="text-sm font-semibold" x-text="t.min ? t.min + ' visits' : 'Start'"></span>
+            </div></template>
+          </div>
+        </div></template>
+
+        <template x-if="sheet==='help'"><div>
+          <h3 class="text-3xl font-extrabold tracking-tight">How it works</h3>
+          <div class="grid grid-cols-2 gap-3 mt-4 text-sm">
+            <div class="rounded-xl2 bg-coral-soft p-4"><span x-html="icon('qr','w-7 h-7')"></span><p class="font-bold mt-3">Show code</p><p class="text-ink/60">when you pay</p></div>
+            <div class="rounded-xl2 bg-sun-soft p-4"><span x-html="coin('w-7 h-7')"></span><p class="font-bold mt-3">Earn 5%</p><p class="text-ink/60">on every visit</p></div>
+            <div class="rounded-xl2 bg-lilac-soft p-4"><span x-html="icon('star','w-7 h-7')"></span><p class="font-bold mt-3">Level up</p><p class="text-ink/60">unlock perks</p></div>
+            <div class="rounded-xl2 bg-mint-soft p-4"><span x-html="icon('tag','w-7 h-7')"></span><p class="font-bold mt-3">Spend or sell</p><p class="text-ink/60">value stays inside</p></div>
+          </div>
+          <button @click="sheet=null; slide=0; screen='intro'" class="mt-5 w-full h-12 rounded-full bg-white font-semibold shadow-soft">Replay intro</button>
+        </div></template>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- Guided walkthrough -->
+  <aside class="w-full max-w-sm">
+    <h1 class="text-5xl font-extrabold tracking-tight">Customer</h1>
+    <p class="text-lg text-ink/60 mt-1">Follow the steps, or tap around the phone freely.</p>
+    <ol class="mt-8 relative">
+      <span class="absolute left-[19px] top-5 bottom-5 w-0.5 bg-ink/10"></span>
+      <template x-for="(t,i) in tourSteps" :key="i"><li>
+        <button @click="goStep(i)" class="relative w-full flex items-start gap-4 py-2.5 text-left group">
+          <span class="relative z-10 w-10 h-10 shrink-0 rounded-full grid place-items-center font-bold transition"
+            :class="i===tour ? 'bg-ink text-white scale-110' : (i<tour ? 'bg-coral text-ink' : 'bg-white border border-ink/15 text-ink/50 group-hover:border-ink/40')"
+            x-html="i<tour ? icon('check','w-5 h-5') : (i+1)"></span>
+          <span class="pt-1.5"><span class="block font-bold transition" :class="i===tour ? 'text-ink' : 'text-ink/55 group-hover:text-ink'" x-text="t.t"></span>
+            <span x-show="i===tour" x-transition class="block text-sm text-ink/55 mt-0.5" x-text="t.d"></span></span>
+        </button>
+      </li></template>
+    </ol>
+    <div class="mt-6 flex gap-2">
+      <button @click="goStep(tour+1)" x-show="tour<tourSteps.length-1" class="flex-1 h-12 rounded-xl bg-ink text-white font-semibold hover:bg-black transition">Next step</button>
+      <button @click="reset(); tour=0" class="h-12 px-5 rounded-xl border border-ink/15 font-semibold hover:bg-white transition">Start over</button>
+    </div>
+  </aside>
+</div>
+
+<script>
+function customer() {
+  return {
+    tour: 0,
+    tourSteps: [
+      { t: 'Join the club', d: 'Scan the poster at the counter. One tap, no sign-up.' },
+      { t: 'Onboarding', d: 'Three slides explain how the card works.' },
+      { t: 'Your card', d: 'Balance, level progress, perks and history in one screen.' },
+      { t: 'Pay at the counter', d: 'Show the code. The cashier scans it.' },
+      { t: 'Earn cashback', d: '5% of the purchase lands on the card.' },
+      { t: 'Reach a new level', d: 'A third visit unlocks Silver and a new perk.' },
+      { t: 'Use your balance', d: 'Take part of the bill off with the balance.' },
+      { t: 'Sell your card', d: 'List it with its balance and level inside.' },
+    ],
+    goStep(i) {
+      if (i < 0 || i >= this.tourSteps.length) return;
+      this.tour = i; this.sheet = null; this.levelUp = false;
+      if (i === 0) this.reset();
+      if (i === 1) { this.screen = 'intro'; this.slide = 0; }
+      if (i === 2) this.screen = 'home';
+      if (i === 3) this.screen = 'code';
+      if (i === 4) { this.screen = 'home'; this.purchase(5); }
+      if (i === 5) { this.screen = 'home'; while (tierFor(this.visits) < 1) this.purchase(6.5); }
+      if (i === 6) { this.screen = 'home'; this.useAmt = +(this.balance / 2).toFixed(2); this.sheet = 'use'; }
+      if (i === 7) { this.screen = 'home'; this.sheet = 'sell'; }
+    },
+    screen: 'join', slide: 0, loading: false, sheet: null, levelUp: false, bump: false, floats: [],
+    balance: 0, shown: 0, visits: 0, activity: [], useAmt: 0, lastUse: 0, price: 4,
+    slides: [
+      { t: 'This is your card', d: 'It lives on this phone. It is yours.', bg: 'bg-sun-soft' },
+      { t: 'Show it when you pay', d: 'One scan at the counter. That is it.', bg: 'bg-lilac-soft' },
+      { t: 'Money lands on it', d: '5% of every purchase. Spend it or sell the card.', bg: 'bg-mint-soft' },
+    ],
+    join() { this.loading = true; setTimeout(() => { this.loading = false; this.screen = 'intro'; this.slide = 0; this.tour = 1; }, 900); },
+    nextTier() { return TIERS[tierFor(this.visits) + 1]; },
+    progress() { const t = TIERS[tierFor(this.visits)], n = this.nextTier(); return n ? (this.visits - t.min) / (n.min - t.min) : 1; },
+    purchase(amount) {
+      if (this.screen === 'join' || this.screen === 'intro') this.screen = 'home';
+      const before = tierFor(this.visits), cb = +(amount * 0.05).toFixed(2);
+      this.visits++; this.balance = +(this.balance + cb).toFixed(2);
+      this.activity.unshift({ id: Date.now(), t: 'Corner Café', s: `Spent ${money(amount)}`, v: cb });
+      const f = { id: Date.now(), v: cb }; this.floats.push(f); setTimeout(() => this.floats = this.floats.filter(x => x !== f), 1100);
+      this.bump = true; setTimeout(() => this.bump = false, 500);
+      const target = this.balance, step = () => { this.shown = Math.min(target, +(this.shown + Math.max(0.01, (target - this.shown) / 10)).toFixed(2)); if (this.shown < target) requestAnimationFrame(step); }; step();
+      if (tierFor(this.visits) > before) setTimeout(() => { this.levelUp = true; this.$nextTick(() => confetti(this.$refs.party, 40)); }, 900);
+    },
+    useBalance() {
+      this.lastUse = +this.useAmt.toFixed(2); this.balance = +(this.balance - this.lastUse).toFixed(2); this.shown = this.balance;
+      this.activity.unshift({ id: Date.now(), t: 'Used at counter', s: 'Code 7K4Q', v: -this.lastUse });
+      this.sheet = 'code';
+    },
+    reset() { Object.assign(this, { screen: 'join', sheet: null, levelUp: false, balance: 0, shown: 0, visits: 0, activity: [] }); },
+  };
+}
+</script>
+</body>
+</html>
