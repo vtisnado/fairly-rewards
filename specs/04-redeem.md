@@ -1,4 +1,4 @@
-# RDM: Redeeming balance and perks (draft)
+# RDM: Redeeming balance and perks (implemented)
 
 ## Requirements
 - **RDM-001** The pass owner MUST be able to call `redeem(token_id, amount)` to spend balance at the merchant. Amount MUST be > 0 and <= balance.

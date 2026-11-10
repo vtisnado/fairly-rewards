@@ -40,7 +40,7 @@ Never edit an accepted decision in place; add a new one that supersedes it.
 - **Decision:** deploy a standard NEP-141 token `tusdc` (6 decimals) with a public faucet method on testnet. Merchants fund pools via `ft_transfer_call` to `fairly`.
 - **Consequences:** clearly labeled "test USDC" in UI and README.
 
-## D-009 Pass balance model: proposed (spike T1.2)
+## D-009 Pass balance model: accepted (option A), option B pending spike T1.2
 - **Context:** the `nfts` track hints at "NFTs as accounts / sub-accounts". A real sub-account per pass needs a small vault contract deployed per pass; storage cost may be too high unless NEAR global contracts are available on testnet.
 - **Option A (fallback):** pass balances are an internal ledger in `fairly` keyed by `token_id`. Transfer of the NFT transfers the balance.
 - **Option B (target):** each pass gets a keyless sub-account `p<id>.fairly.<net>` running a shared "pass vault" global contract that only obeys `fairly`; tUSDC sits in that account.
@@ -130,3 +130,11 @@ Never edit an accepted decision in place; add a new one that supersedes it.
 
 ## D-033 Git workflow - accepted
 - **Decision:** `main` is always deployable. One branch per phase or area (`feat/contracts`, `feat/web-customer`, ...), past-tense commit messages referencing spec ids (see AGENTS.md), merge to `main` when the area passes its tests. Push only with the human's approval. Copyright holder: the project owner.
+
+## D-034 Contract implementation choices - accepted
+- **Pass balances:** option A of D-009 (internal ledger keyed by `token_id`). Option B stays a stretch goal behind spike T1.2.
+- **Storage:** the merchant prepays NEAR when creating a program; passes, purchases, listings and transfers are charged to that program storage balance, because cashier function-call keys cannot attach deposits (PROG-001, PROG-013).
+- **Approvals:** NEP-178 approvals are not enabled; resale happens inside the contract (D-012). `nft_payout` and `nft_transfer_payout` (NEP-199) are implemented for owner-initiated transfers.
+- **Listings:** invalidated lazily when the owner changes (SALE-005).
+- **Payout safety:** every tUSDC payout has a callback that restores the pass balance or pool, or credits a claimable refund (NFR-011). The test token auto-registers receivers (TOK-005).
+- **Deployment:** testnet `fairly-ayxv4.testnet` (built with the `demo` feature) and `tusdc-ayxv4.testnet`, via `scripts/deploy`.

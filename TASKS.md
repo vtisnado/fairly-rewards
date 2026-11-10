@@ -30,17 +30,19 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 ## Phase 1: Contracts (2026-11-11)
 | Id | Task | Specs | Status |
 |---|---|---|---|
-| T1.1 | Verify near-sdk / cargo-near / near-contract-standards versions on docs.near.org; scaffold `contracts/` workspace | D-006 | todo |
+| T1.1 | Verify near-sdk / cargo-near / near-contract-standards versions on docs.near.org; scaffold `contracts/` workspace | D-006 | done |
 | T1.2 | Spike: pass vault sub-accounts with global contracts on testnet (max 4 h) → decide D-009 | PASS-011 | todo |
-| T1.3 | `tusdc` NEP-141 with faucet | TOK-001..004 | todo |
-| T1.4 | Programs: create, fund, withdraw, cashiers, pause, views | PROG-001..010 | todo |
-| T1.5 | Passes: mint, NEP-171/177/181, one per program, metadata, tiers | PASS-001..010 | todo |
-| T1.6 | Purchases: cashback, pool check, daily cap, events | BUY-001..007 | todo |
-| T1.7 | Redeem and perks | RDM-001..006 | todo |
-| T1.8 | Resale + NEP-199 payouts | SALE-001..007 | todo |
-| T1.9 | Expiry sweep (+ demo feature seconds) | EXP-001..005 | todo |
-| T1.10 | Sandbox tests for all MUST requirements | NFR-006 | todo |
-| T1.11 | Deploy script to testnet | - | todo |
+| T1.3 | `tusdc` NEP-141 with faucet | TOK-001..004 | done |
+| T1.4 | Programs: create, fund, withdraw, cashiers, pause, views | PROG-001..010 | done |
+| T1.5 | Passes: mint, NEP-171/177/181, one per program, metadata, tiers | PASS-001..010 | done |
+| T1.6 | Purchases: cashback, pool check, daily cap, events | BUY-001..007 | done |
+| T1.7 | Redeem and perks | RDM-001..006 | done |
+| T1.8 | Resale + NEP-199 payouts | SALE-001..007 | done |
+| T1.9 | Expiry sweep (+ demo feature seconds) | EXP-001..005 | done |
+| T1.10 | Unit tests for all MUST contract requirements (54 passing) | NFR-006 | done |
+| T1.12 | Sandbox (near-workspaces) integration tests for cross-contract flows: fund, redeem, sale payouts | NFR-002, NFR-011 | todo |
+| T1.13 | Owner method to update `art_base_url` once the hosted app URL exists, then redeploy | PASS-005 | todo |
+| T1.11 | Deploy script to testnet | - | done |
 
 ## Phase 2: Web app (2026-11-12)
 | Id | Task | Specs | Status |

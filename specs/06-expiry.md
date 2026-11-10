@@ -1,4 +1,4 @@
-# EXP: Inactivity expiry (draft)
+# EXP: Inactivity expiry (implemented)
 
 ## Requirements
 - **EXP-000** Merchants choose expiry from: 90 days, 180 days, 1 year, or never.

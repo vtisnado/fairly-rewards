@@ -38,8 +38,9 @@ The `dev` image ships Rust (stable, `wasm32-unknown-unknown`), cargo-near 0.23, 
 | Purpose | Command |
 |---|---|
 | NEAR CLI | `docker compose run --rm dev near ...` |
-| Build contracts | `docker compose run --rm dev cargo near build` |
-| Test contracts | `docker compose run --rm dev cargo test` |
+| Build contracts | `docker compose run --rm dev sh -c "cd contracts/fairly && cargo near build non-reproducible-wasm"` |
+| Test contracts | `docker compose run --rm dev sh -c "cd contracts && cargo test"` |
+| Deploy contracts to testnet | `docker compose run --rm dev ./scripts/deploy` |
 | Web app dev server | `docker compose run --rm --service-ports dev pnpm dev` → http://localhost:4321 |
 | API (Workers) dev server | port 8787 |
 | Seed demo data | `docker compose run --rm dev ./scripts/seed` |

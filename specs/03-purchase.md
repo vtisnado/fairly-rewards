@@ -1,4 +1,4 @@
-# BUY: Recording purchases and cashback (draft)
+# BUY: Recording purchases and cashback (implemented)
 
 ## Requirements
 - **BUY-001** `record_purchase(token_id, amount_cents)` MUST be callable only by the program owner or its cashiers.

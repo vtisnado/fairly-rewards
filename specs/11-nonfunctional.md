@@ -2,6 +2,7 @@
 
 - **NFR-001 Security:** every privileged method checks the caller explicitly; errors use stable codes (`NOT_OWNER`, `NOT_CASHIER`, ...).
 - **NFR-002 Security:** cross-contract calls (ft_transfer) MUST use callbacks that roll back state on failure.
+- **NFR-011 Security:** if a tUSDC payout fails, the amount MUST be restored (redeem, withdraw) or credited to the receiver's refund balance, claimable with `withdraw_refund()`.
 - **NFR-003 Security:** no secret ever in the repository; `.env.example` lists names only.
 - **NFR-004 Events:** all state changes emit NEP-297 events, standard `fairly`, version `1.0.0`.
 - **NFR-005 Storage:** callers attach storage deposits for data they create; unused deposit is refunded.

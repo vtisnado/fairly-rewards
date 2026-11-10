@@ -1,4 +1,4 @@
-# PASS: NFT pass, metadata, tiers (draft)
+# PASS: NFT pass, metadata, tiers (implemented)
 
 ## Data
 `Pass { token_id, program_slug, owner, balance, purchase_count, total_spent_cents, tier_index, last_activity_ns, created_ns }`

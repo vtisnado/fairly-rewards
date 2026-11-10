@@ -1,0 +1,35 @@
+#!/bin/sh
+set -eu
+
+: "${PUBLIC_FAIRLY_CONTRACT:?missing in .env}"
+: "${PUBLIC_TUSDC_CONTRACT:?missing in .env}"
+: "${PUBLIC_APP_URL:?missing in .env}"
+network="${NEAR_NETWORK:-testnet}"
+root="$(cd "$(dirname "$0")/.." && pwd)"
+artifacts="${root}/contracts/target/near"
+
+is_initialized() {
+  near contract call-function as-read-only "$1" "$2" json-args '{}' network-config "${network}" now >/dev/null 2>&1
+}
+
+deploy() {
+  account="$1"
+  wasm="$2"
+  view="$3"
+  init_args="$4"
+  if is_initialized "${account}" "${view}"; then
+    near contract deploy "${account}" use-file "${wasm}" without-init-call \
+      network-config "${network}" sign-with-legacy-keychain send
+  else
+    near contract deploy "${account}" use-file "${wasm}" with-init-call new json-args "${init_args}" \
+      prepaid-gas '100 Tgas' attached-deposit '0 NEAR' \
+      network-config "${network}" sign-with-legacy-keychain send
+  fi
+}
+
+(cd "${root}/contracts/tusdc" && cargo near build non-reproducible-wasm)
+(cd "${root}/contracts/fairly" && cargo near build non-reproducible-wasm --features demo)
+
+deploy "${PUBLIC_TUSDC_CONTRACT}" "${artifacts}/tusdc/tusdc.wasm" ft_metadata '{}'
+deploy "${PUBLIC_FAIRLY_CONTRACT}" "${artifacts}/fairly/fairly.wasm" get_config \
+  "{\"tusdc\":\"${PUBLIC_TUSDC_CONTRACT}\",\"art_base_url\":\"${PUBLIC_APP_URL}\"}"
