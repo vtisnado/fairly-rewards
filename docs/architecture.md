@@ -1,7 +1,7 @@
 # Architecture
 
 ```
-            ┌────────────────────────── Web app (Next.js on Vercel) ──────────────────────────┐
+            ┌───────────────────────── Web (Astro on Cloudflare) + API (Workers) ─────────────────────┐
             │  /merchant  dashboard     /cashier  POS scanner     /pass/<id>  customer view   │
             │  /market    resale        /api/art  SVG artwork     /api/sponsor  account fund  │
             └───────┬───────────────────────────┬─────────────────────────────┬───────────────┘

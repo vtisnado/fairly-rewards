@@ -129,4 +129,4 @@ Never edit an accepted decision in place; add a new one that supersedes it.
 - **Decision:** Astro + Tailwind + Vue islands on Cloudflare (Pages/Workers); Supabase (Postgres, Realtime, Storage) for history, analytics and merchant data; NEAR testnet for money. Everything runs locally in Docker.
 
 ## D-033 Git workflow - accepted
-- **Decision:** `main` is always deployable. One branch per phase or area (`feat/contracts`, `feat/web-customer`, ...), Conventional Commits referencing spec ids, merge to `main` when the area passes its tests. Push only with the human's approval. Copyright holder: the project owner.
+- **Decision:** `main` is always deployable. One branch per phase or area (`feat/contracts`, `feat/web-customer`, ...), past-tense commit messages referencing spec ids (see AGENTS.md), merge to `main` when the area passes its tests. Push only with the human's approval. Copyright holder: the project owner.

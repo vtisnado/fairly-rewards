@@ -1,0 +1,34 @@
+name: fairly
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: fairly-dev
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - cargo-registry:/usr/local/cargo/registry
+      - pnpm-store:/root/.local/share/pnpm/store
+      - near-credentials:/root/.near-credentials
+      - near-config:/root/.config/near-cli
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "4321:4321"
+      - "8787:8787"
+
+  design:
+    image: nginx:alpine
+    volumes:
+      - ./design:/usr/share/nginx/html:ro
+    ports:
+      - "8088:80"
+
+volumes:
+  cargo-registry:
+  pnpm-store:
+  near-credentials:
+  near-config:

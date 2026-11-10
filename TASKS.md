@@ -7,10 +7,11 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 | Id | Task | Specs | Status |
 |---|---|---|---|
 | T0.1 | Project folder, docs, specs, AGENTS, TASKS, READMEs | - | done |
-| T0.2 | Confirm working name and LICENSE copyright holder with human (D-001) | - | todo |
-| T0.3 | `docker/Dockerfile` (Rust stable + wasm target, cargo-near, near-cli-rs, Node LTS, pnpm) and `docker-compose.yml` with `dev` service | NFR-007 | todo |
+| T0.2 | Confirm working name and LICENSE copyright holder with human (D-001) | - | done |
+| T0.3 | `docker/Dockerfile` (Rust stable + wasm target, cargo-near, near-cli-rs, Node LTS, pnpm) and `docker-compose.yml` with `dev` service | NFR-007 | done |
 | T0.4 | `git init` and first commit (`.gitignore`, `.env.example` already created) | NFR-003 | done |
-| T0.5 | Create testnet accounts (contract, tusdc, sponsor, demo merchant, demo cashier) via near-cli in Docker; store keys outside repo | - | todo |
+| T0.5 | Create testnet accounts (contract, tusdc, sponsor, demo merchant, demo cashier) via near-cli in Docker; store keys outside repo | - | done |
+| T0.6 | Local Supabase stack in Docker (Postgres, Realtime, Storage) when the API needs it | D-032 | todo |
 
 ## Phase 0.5: Design review (2026-11-10, before any commit or app code)
 | Id | Task | Specs | Status |
@@ -58,7 +59,7 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 | T3.1 | Market screen + buy flow | UI-030, SALE-008 | todo |
 | T3.2 | Landing page with demo roles | UI-050, DEMO-003 | todo |
 | T3.3 | Seed and smoke scripts | DEMO-001, 002, 004 | todo |
-| T3.4 | Deploy to Vercel; env vars; verify on phone | NFR-008..010 | todo |
+| T3.4 | Deploy to Cloudflare (Pages + Workers) and Supabase; env vars; verify on phone | NFR-008..010 | todo |
 | T3.5 | Stretch: email/social login | ONB-007 | todo |
 
 ## Phase 4: Submission (2026-11-14)
