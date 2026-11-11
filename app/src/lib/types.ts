@@ -92,3 +92,13 @@ export interface ListingView {
   tier_name: string;
   purchase_count: number;
 }
+
+export interface PurchaseResult {
+  token_id: string;
+  cashback: U128;
+  credited: U128;
+  pending: U128;
+  balance: U128;
+  tier_index: number;
+  tier_up: boolean;
+}

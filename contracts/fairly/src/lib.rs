@@ -9,7 +9,7 @@ pub mod models;
 
 mod expiry;
 mod nft;
-mod passes;
+pub mod passes;
 mod payouts;
 mod programs;
 mod purchases;

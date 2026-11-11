@@ -15,6 +15,10 @@ pub fn validate_name(name: &str, max_len: usize) {
     require!(length >= 1 && length <= max_len, INVALID_NAME);
 }
 
+pub fn validate_mcc(mcc: u16) {
+    require!((1..=9999).contains(&mcc), INVALID_MCC);
+}
+
 pub fn validate_color(color: &str) {
     let bytes = color.as_bytes();
     let valid =

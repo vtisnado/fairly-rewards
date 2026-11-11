@@ -7,7 +7,7 @@
 - **PASS-001** A pass MUST be a NEP-171 token implementing NEP-177 metadata and NEP-181 enumeration.
 - **PASS-002** `issue_pass(slug, owner)` MUST be callable only by the program owner or one of its cashiers, and MUST mint a new pass to `owner` with zero balance and tier index 0.
 - **PASS-003** An account MUST hold at most one pass per program. A second `issue_pass` for the same owner and program MUST fail with `ALREADY_HAS_PASS`.
-- **PASS-004** `token_id` MUST be `<slug>:<sequence>` (e.g. `cafe-esquina:42`).
+- **PASS-004** `token_id` MUST be `<slug>:<code>`, where `code` is 6 characters of Crockford Base32 (`0-9`, `A-Z` without `I L O U`) drawn from the block random seed, unique within the program (e.g. `cafe-esquina:K7Q4MZ`). Codes are not sequential. UIs display them as `K7Q-4MZ`.
 - **PASS-005** Metadata `title` MUST be `<program name>: <tier name>`; `media` MUST be `<APP_URL>/api/art/<slug>/<tier_index>.svg`; `extra` MUST be JSON with `tier`, `balance`, `purchase_count`.
 - **PASS-006** The tier MUST be recomputed after every purchase as the highest tier whose `min_purchases <= purchase_count`. Tiers MUST NOT go down.
 - **PASS-007** When the tier changes, the contract MUST emit a `tier_up` event.

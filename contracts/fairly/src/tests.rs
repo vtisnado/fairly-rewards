@@ -75,6 +75,7 @@ fn program_input() -> ProgramInput {
     ProgramInput {
         slug: SLUG.into(),
         name: "Cafe Esquina".into(),
+        mcc: 5814,
         brand_color: "#F2654F".into(),
         logo_url: None,
         cashback_bps: 500,
@@ -346,10 +347,29 @@ fn test_pass_003_one_pass_per_program() {
 }
 
 #[test]
-fn test_pass_004_token_id_format() {
+fn test_pass_004_token_id_is_random_crockford_code() {
     let mut contract = setup();
-    assert_eq!(issue_to(&mut contract, &maria()), "cafe-esquina:1");
-    assert_eq!(issue_to(&mut contract, &juan()), "cafe-esquina:2");
+    let first = issue_to(&mut contract, &maria());
+    let second = issue_to(&mut contract, &juan());
+    for token_id in [&first, &second] {
+        let code = token_id.strip_prefix("cafe-esquina:").unwrap();
+        assert_eq!(code.len(), crate::passes::CODE_LENGTH);
+        assert!(code
+            .bytes()
+            .all(|b| crate::passes::CODE_ALPHABET.contains(&b)));
+    }
+    assert_ne!(first, second);
+}
+
+#[test]
+#[should_panic(expected = "INVALID_MCC")]
+fn test_prog_014_mcc_must_be_four_digits() {
+    call_as(&merchant(), NearToken::from_near(1), START_NS);
+    let mut contract = Fairly::new(tusdc(), "https://fairly.example".into());
+    contract.create_program(ProgramInput {
+        mcc: 10_000,
+        ..program_input()
+    });
 }
 
 #[test]
@@ -614,7 +634,7 @@ fn test_rdm_001_003_redeem() {
     purchase(&mut contract, &token_id, 2_000);
     as_user_with_yocto(&maria());
     let code = contract.redeem(token_id.clone(), U128(600_000));
-    assert_eq!(code, "cafe-esquina:1#1");
+    assert_eq!(code, format!("{token_id}#1"));
     assert_eq!(contract.get_pass(token_id).unwrap().pass.balance.0, 400_000);
 }
 

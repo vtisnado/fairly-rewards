@@ -45,6 +45,8 @@ The `dev` image ships Rust (stable, `wasm32-unknown-unknown`), cargo-near 0.23, 
 | Web app dev server | `docker compose run --rm --service-ports dev pnpm -C app dev` → http://localhost:4321 |
 | API (Workers) dev server | port 8787 |
 | Seed demo data | `docker compose run --rm dev ./scripts/seed` |
+| Start local Supabase (Postgres, Realtime, Studio at http://localhost:54323) | `docker compose run --rm supabase start` |
+| Stop local Supabase | `docker compose run --rm supabase stop` |
 | End-to-end smoke | `docker compose run --rm dev ./scripts/smoke` |
 
 ## Testnet accounts
@@ -61,6 +63,9 @@ docker compose run --rm dev near account create-account sponsor-by-faucet-servic
 | `sponsor-<suffix>.testnet` | Funds new customer accounts |
 | `demo-cafe-<suffix>.testnet` | Demo merchant |
 | `demo-cashier-<suffix>.testnet` | Demo cashier |
+
+## Supabase
+The `supabase` service runs the Supabase CLI with the host Docker socket and host networking, so it can start the Supabase containers next to ours. Migrations live in `supabase/migrations`. After `start`, copy the publishable and secret keys it prints into `.env`.
 
 ## Secrets
 Copy `.env.example` to `.env` and fill in testnet values. Never commit `.env` or key files. NEAR CLI credentials live in the `near-credentials` Docker volume, not in the repo.

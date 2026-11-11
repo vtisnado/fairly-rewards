@@ -77,6 +77,7 @@ impl Fairly {
         validate_slug(&input.slug);
         require!(!self.programs.contains_key(&input.slug), SLUG_TAKEN);
         validate_name(&input.name, 64);
+        validate_mcc(input.mcc);
         validate_color(&input.brand_color);
         validate_cashback_bps(input.cashback_bps);
         validate_royalty_bps(input.royalty_bps);
@@ -97,6 +98,7 @@ impl Fairly {
             slug: input.slug.clone(),
             owner: owner.clone(),
             name: input.name,
+            mcc: input.mcc,
             brand_color: input.brand_color,
             logo_url: input.logo_url,
             cashback_bps: input.cashback_bps,

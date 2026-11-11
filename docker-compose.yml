@@ -18,9 +18,24 @@ services:
     env_file:
       - path: .env
         required: false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "4321:4321"
       - "8787:8787"
+
+  supabase:
+    image: fairly-dev
+    working_dir: ${PWD}
+    entrypoint: ["supabase"]
+    command: ["status"]
+    volumes:
+      - .:${PWD}
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      SUPABASE_TELEMETRY_DISABLED: "1"
+    network_mode: host
+    profiles: ["tools"]
 
   design:
     image: nginx:alpine

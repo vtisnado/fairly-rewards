@@ -82,6 +82,7 @@ pub struct Program {
     pub slug: String,
     pub owner: AccountId,
     pub name: String,
+    pub mcc: u16,
     pub brand_color: String,
     pub logo_url: Option<String>,
     pub cashback_bps: u16,
@@ -108,6 +109,7 @@ pub struct Program {
 pub struct ProgramInput {
     pub slug: String,
     pub name: String,
+    pub mcc: u16,
     pub brand_color: String,
     pub logo_url: Option<String>,
     pub cashback_bps: u16,

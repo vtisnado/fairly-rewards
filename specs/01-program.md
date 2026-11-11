@@ -17,6 +17,7 @@
 - **PROG-011** A program MUST store branding: `brand_color` (hex) and optional `logo_url`, used by the card artwork and customer screens.
 - **PROG-012** The hackathon build MUST fund pools only with tUSDC from a NEAR testnet wallet. Card payments (fiat on-ramp) and stablecoins from other chains (NEAR Intents) are documented as production paths and shown as such in the UI.
 - **PROG-013** Anyone MAY top up a program's storage balance with `deposit_storage(slug)`. When it is too low, cashier calls fail with `NO_STORAGE`.
+- **PROG-014** A program MUST store its category as an ISO 18245 merchant category code `mcc` (4 digits, e.g. 5814 fast food and cafés, 5812 restaurants, 5462 bakeries, 5411 grocery, 7230 barbers). UIs show it as a label and icon, never inside the card code.
 - **PROG-010** `get_program(slug)` and `get_programs_by_owner(account)` MUST be public views.
 
 ## Acceptance

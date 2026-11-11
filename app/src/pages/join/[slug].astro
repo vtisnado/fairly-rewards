@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CustomerApp from '../../components/customer/CustomerApp.vue';
+import { getProgram } from '../../lib/near';
+import { PUBLIC_DEMO_PROGRAM_SLUG } from 'astro:env/client';
+
+const program = Astro.params.slug ? await getProgram(Astro.params.slug).catch(() => null) : null;
+if (!program) {
+  return Astro.redirect('/404');
+}
+---
+
+<BaseLayout title={`${program.name} card`} description={`Join the ${program.name} rewards club.`}>
+  <CustomerApp client:only="vue" program={program} isDemo={program.slug === PUBLIC_DEMO_PROGRAM_SLUG} />
+</BaseLayout>

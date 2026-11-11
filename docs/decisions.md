@@ -138,3 +138,13 @@ Never edit an accepted decision in place; add a new one that supersedes it.
 - **Listings:** invalidated lazily when the owner changes (SALE-005).
 - **Payout safety:** every tUSDC payout has a callback that restores the pass balance or pool, or credits a claimable refund (NFR-011). The test token auto-registers receivers (TOK-005).
 - **Deployment:** testnet `fairly-ayxv4.testnet` (built with the `demo` feature) and `tusdc-ayxv4.testnet`, via `scripts/deploy`.
+
+## D-035 Gasless customer actions through a relay - accepted
+- **Context:** an implicit account funded with 0.05 NEAR cannot prepay 100 Tgas, and customers should never see gas.
+- **Decision:** customer actions are signed in the browser as NEP-366 meta transactions and relayed by the sponsor via `POST /api/relay`, which only accepts calls to the `fairly` contract on an allowlist of methods (ONB-010). The demo program issues passes and simulates purchases server-side with the demo cashier key (ONB-008, DEMO-005).
+- **Consequences:** the sponsor pays gas for every customer action; the relay is rate-limited per IP. Rate limits are in-memory per worker instance, acceptable for the demo.
+
+## D-036 Card codes, merchant categories and real-time events - accepted
+- **Card codes:** 6-character Crockford Base32 codes from the block random seed (about one billion per program, not guessable, easy to read aloud). Category uses the ISO 18245 MCC standard as a program field, not a prefix in the code (PASS-004, PROG-014).
+- **Events and real time:** events live in Supabase Postgres (one transparent, queryable history that analytics also uses) and reach screens through Supabase Realtime, which manages reconnection and a long-polling fallback. Chosen over Cloudflare Durable Objects (state hidden inside Cloudflare) and over a custom SSE endpoint (more code, would still read the database in a loop). Interval polling of the contract is removed (EVT-001..005).
+- **Consequences:** the contract was redeployed with fresh state on testnet. Supabase runs locally through its CLI in Docker.

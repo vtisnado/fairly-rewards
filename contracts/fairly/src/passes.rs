@@ -43,7 +43,7 @@ impl Fairly {
         self.assert_no_pass_in_program(&slug, &owner);
 
         program.pass_count += 1;
-        let token_id = format!("{slug}:{}", program.pass_count);
+        let token_id = self.unused_token_id(&slug, program.pass_count);
         self.tokens
             .internal_mint_with_refund(token_id.clone(), owner.clone(), None, None);
         NftMint {
@@ -114,7 +114,34 @@ impl Fairly {
     }
 }
 
+pub const CODE_ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+pub const CODE_LENGTH: usize = 6;
+const MAX_CODE_ATTEMPTS: u8 = 8;
+
+pub fn card_code(entropy: &[u8]) -> String {
+    let bits = entropy
+        .iter()
+        .take(4)
+        .fold(0u32, |acc, byte| (acc << 8) | u32::from(*byte));
+    (0..CODE_LENGTH)
+        .map(|index| CODE_ALPHABET[((bits >> (index * 5)) & 0x1f) as usize] as char)
+        .collect()
+}
+
 impl Fairly {
+    fn unused_token_id(&self, slug: &str, sequence: u64) -> TokenId {
+        let seed = env::random_seed();
+        (0..MAX_CODE_ATTEMPTS)
+            .map(|attempt| {
+                let mut input = seed.clone();
+                input.extend_from_slice(&sequence.to_le_bytes());
+                input.push(attempt);
+                format!("{slug}:{}", card_code(&env::sha256(&input)))
+            })
+            .find(|token_id| self.tokens.owner_by_id.get(token_id).is_none())
+            .unwrap_or_else(|| env::panic_str(CODE_COLLISION))
+    }
+
     pub(crate) fn token_metadata(&self, pass: &Pass, program: &Program) -> TokenMetadata {
         let tier = &program.tiers[usize::from(pass.tier_index)];
         let extra = json!({

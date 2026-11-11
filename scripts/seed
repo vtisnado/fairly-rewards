@@ -1,0 +1,34 @@
+#!/bin/sh
+set -eu
+
+: "${PUBLIC_FAIRLY_CONTRACT:?missing in .env}"
+: "${PUBLIC_TUSDC_CONTRACT:?missing in .env}"
+: "${DEMO_MERCHANT_ACCOUNT_ID:?missing in .env}"
+: "${DEMO_CASHIER_ACCOUNT_ID:?missing in .env}"
+network="${NEAR_NETWORK:-testnet}"
+slug="${PUBLIC_DEMO_PROGRAM_SLUG:-cafe-esquina}"
+
+call() {
+  near contract call-function as-transaction "$1" "$2" json-args "$3" \
+    prepaid-gas '100 Tgas' attached-deposit "$4" \
+    sign-as "$5" network-config "${network}" sign-with-legacy-keychain send
+}
+
+program=$(cat <<JSON
+{"input":{"slug":"${slug}","name":"Corner Café","mcc":5814,"brand_color":"#F2654F","logo_url":null,
+"cashback_bps":500,"royalty_bps":500,"expiry_days":90,"daily_cap":"100000000",
+"tiers":[{"name":"Bronze","min_purchases":0,"perk":"Free cookie"},
+{"name":"Silver","min_purchases":3,"perk":"Size upgrade"},
+{"name":"Gold","min_purchases":6,"perk":"Free drink monthly"}],
+"locations":[{"id":"downtown","name":"Downtown","address":"12 Market St","lat":40.4168,"lng":-3.7038}]}}
+JSON
+)
+
+call "${PUBLIC_TUSDC_CONTRACT}" faucet '{"amount":"100000000"}' '0 NEAR' "${DEMO_MERCHANT_ACCOUNT_ID}"
+call "${PUBLIC_FAIRLY_CONTRACT}" create_program "${program}" '1 NEAR' "${DEMO_MERCHANT_ACCOUNT_ID}"
+call "${PUBLIC_FAIRLY_CONTRACT}" add_cashier \
+  "{\"slug\":\"${slug}\",\"account_id\":\"${DEMO_CASHIER_ACCOUNT_ID}\",\"location_id\":\"downtown\"}" \
+  '0 NEAR' "${DEMO_MERCHANT_ACCOUNT_ID}"
+call "${PUBLIC_TUSDC_CONTRACT}" ft_transfer_call \
+  "{\"receiver_id\":\"${PUBLIC_FAIRLY_CONTRACT}\",\"amount\":\"50000000\",\"msg\":\"{\\\"fund\\\":\\\"${slug}\\\"}\"}" \
+  '1 yoctoNEAR' "${DEMO_MERCHANT_ACCOUNT_ID}"

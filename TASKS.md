@@ -11,7 +11,7 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 | T0.3 | `docker/Dockerfile` (Rust stable + wasm target, cargo-near, near-cli-rs, Node LTS, pnpm) and `docker-compose.yml` with `dev` service | NFR-007 | done |
 | T0.4 | `git init` and first commit (`.gitignore`, `.env.example` already created) | NFR-003 | done |
 | T0.5 | Create testnet accounts (contract, tusdc, sponsor, demo merchant, demo cashier) via near-cli in Docker; store keys outside repo | - | done |
-| T0.6 | Local Supabase stack in Docker (Postgres, Realtime, Storage) when the API needs it | D-032 | todo |
+| T0.6 | Local Supabase stack in Docker (Postgres, Realtime, Storage) when the API needs it | D-032 | done |
 
 ## Phase 0.5: Design review (2026-11-10, before any commit or app code)
 | Id | Task | Specs | Status |
@@ -41,6 +41,7 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 | T1.9 | Expiry sweep (+ demo feature seconds) | EXP-001..005 | done |
 | T1.10 | Unit tests for all MUST contract requirements (54 passing) | NFR-006 | done |
 | T1.12 | Sandbox (near-workspaces) integration tests for cross-contract flows: fund, redeem, sale payouts | NFR-002, NFR-011 | todo |
+| T1.14 | Card codes (Crockford Base32) and MCC category, contract redeployed with fresh state and `scripts/seed` | PASS-004, PROG-014, DEMO-001 | done |
 | T1.13 | Owner method to update `art_base_url` once the hosted app URL exists, then redeploy | PASS-005 | todo |
 | T1.11 | Deploy script to testnet | - | done |
 
@@ -51,9 +52,12 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 | T2.2 | Art route (SVG by tier) | UI-040, PASS-005 | done |
 | T2.3 | Wallet Selector for merchant/cashier | ONB-006 | todo |
 | T2.4 | Merchant: create program + dashboard + cashiers + join QR | UI-001..004 | todo |
-| T2.5 | Customer onboarding + sponsor route | ONB-001..005 | todo |
+| T2.5 | Customer onboarding, join and relay routes | ONB-001..010, DEMO-005 | done |
 | T2.6 | Cashier POS: issue pass, record purchase, confirm redeems | UI-010..012, BUY-008 | todo |
-| T2.7 | Customer pass screen + actions | UI-020..023 | todo |
+| T2.7 | Customer pass screen + actions | UI-020..023 | done |
+| T2.8 | Events in Supabase and real-time screens without polling | EVT-001..005 | done |
+| T2.9 | Block follower for events that skip the API (cashier signing directly) | EVT-006 | todo |
+| T2.10 | Customer key recovery (passkey proposed, pending decision) | ONB-002 | todo |
 
 ## Phase 3: Market, demo, polish (2026-11-13)
 | Id | Task | Specs | Status |

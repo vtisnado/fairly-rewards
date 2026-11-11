@@ -28,3 +28,4 @@ Spec-driven development (decision D-004). Behavior is defined here first; code a
 | [13-locations.md](13-locations.md) | LOC: locations and devices | draft |
 | [14-analytics.md](14-analytics.md) | ANA: business analytics | draft |
 | [15-runway.md](15-runway.md) | RUN: low and empty rewards money | draft |
+| [16-events.md](16-events.md) | EVT: event history and real-time updates | draft |
