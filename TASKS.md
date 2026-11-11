@@ -47,8 +47,8 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 ## Phase 2: Web app (2026-11-12)
 | Id | Task | Specs | Status |
 |---|---|---|---|
-| T2.1 | Astro + Tailwind + Vue scaffold, testnet badge, NEAR config | UI-* | todo |
-| T2.2 | Art route (SVG by tier) | UI-040, PASS-005 | todo |
+| T2.1 | Astro + Tailwind + Vue scaffold, testnet badge, NEAR config | UI-* | done |
+| T2.2 | Art route (SVG by tier) | UI-040, PASS-005 | done |
 | T2.3 | Wallet Selector for merchant/cashier | ONB-006 | todo |
 | T2.4 | Merchant: create program + dashboard + cashiers + join QR | UI-001..004 | todo |
 | T2.5 | Customer onboarding + sponsor route | ONB-001..005 | todo |

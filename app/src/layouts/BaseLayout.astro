@@ -1,0 +1,38 @@
+---
+import '../styles/global.css';
+import TestnetBadge from '../components/TestnetBadge.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  surface?: 'cream' | 'backoffice' | 'ink';
+}
+
+const { title, description = 'Loyalty cards with real money inside.', surface = 'cream' } = Astro.props;
+const surfaceClass = {
+  cream: 'bg-cream text-ink',
+  backoffice: 'bg-bo-bg text-bo-text',
+  ink: 'bg-ink text-cream',
+}[surface];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title} · Fairly</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class={`min-h-dvh font-sans ${surfaceClass}`}>
+    <TestnetBadge />
+    <slot />
+  </body>
+</html>

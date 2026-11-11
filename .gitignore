@@ -27,3 +27,7 @@ dist/
 # Wrangler local secrets and state
 .dev.vars
 .wrangler/
+
+# Astro
+.astro/
+.pnpm-store/

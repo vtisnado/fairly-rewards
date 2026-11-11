@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-ink: #17161a;
+  --color-ink2: #232127;
+  --color-cream: #fff6ec;
+  --color-coral: #f2654f;
+  --color-coral-dark: #d94f3a;
+  --color-coral-soft: #fce4de;
+  --color-sun: #ffd84d;
+  --color-sun-soft: #fff3c4;
+  --color-lilac: #c9c1ff;
+  --color-lilac-soft: #ece9ff;
+  --color-mint: #8fe0bf;
+  --color-mint-soft: #ddf6ec;
+  --color-sky: #dce6f0;
+  --color-champagne: #e9dcc0;
+  --color-bronze: #e8894f;
+  --color-silver: #aeb9c6;
+  --color-gold: #ffc23d;
+  --color-bo-bg: #f4f4f2;
+  --color-bo-line: #e5e3de;
+  --color-bo-text: #1c1b1f;
+  --color-bo-muted: #6e6b73;
+  --color-bo-panel: #ffffff;
+
+  --radius-xl2: 14px;
+  --radius-xl3: 18px;
+
+  --shadow-card: 0 24px 40px -18px rgba(23, 22, 26, 0.45);
+  --shadow-soft: 0 10px 30px -12px rgba(23, 22, 26, 0.18);
+
+  --animate-pop: pop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+  --animate-rise: rise 1.1s ease-out forwards;
+  --animate-enter: enter 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+  @keyframes pop {
+    0% { transform: scale(0.6); opacity: 0; }
+    70% { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+  @keyframes rise {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-90px); opacity: 0; }
+  }
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}

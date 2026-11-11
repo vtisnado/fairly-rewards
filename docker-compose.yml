@@ -13,6 +13,8 @@ services:
       - pnpm-store:/root/.local/share/pnpm/store
       - near-credentials:/root/.near-credentials
       - near-config:/root/.config/near-cli
+    environment:
+      ASTRO_TELEMETRY_DISABLED: "1"
     env_file:
       - path: .env
         required: false

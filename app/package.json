@@ -1,0 +1,23 @@
+{
+  "name": "fairly-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --host 0.0.0.0 --port 4321",
+    "build": "astro build",
+    "preview": "wrangler dev --ip 0.0.0.0 --port 8787",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.4.0",
+    "@astrojs/vue": "^7.1.0",
+    "@tailwindcss/vite": "^4.3.0",
+    "astro": "^7.4.0",
+    "near-api-js": "7.4.0",
+    "tailwindcss": "^4.3.0",
+    "vue": "^3.5.40"
+  },
+  "devDependencies": {
+    "wrangler": "^4.150.0"
+  }
+}

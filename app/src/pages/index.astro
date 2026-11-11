@@ -1,0 +1,34 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getProgram } from '../lib/near';
+import { formatMoney, formatPercent } from '../lib/format';
+
+const program = await getProgram('cafe-esquina').catch(() => null);
+---
+
+<BaseLayout title="Loyalty cards with money inside">
+  <main class="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-16">
+    <h1 class="text-5xl font-extrabold tracking-tight">Fairly</h1>
+    {
+      program ? (
+        <section class="grid gap-6 sm:grid-cols-2">
+          {program.tiers.map((_, index) => (
+            <img
+              class="w-full rounded-[20px] shadow-card"
+              src={`/api/art/${program.slug}/${index}.svg?purchases=${program.tiers[index].min_purchases + 1}&balance=${(index + 1) * 1250000}&number=${String(index + 1).padStart(4, '0')}`}
+              alt={`${program.name} ${program.tiers[index].name} card`}
+            />
+          ))}
+          <dl class="grid gap-2 text-lg">
+            <dt class="text-sm opacity-60">Rewards money</dt>
+            <dd class="font-bold">{formatMoney(program.pool_balance)}</dd>
+            <dt class="text-sm opacity-60">Cashback</dt>
+            <dd class="font-bold">{formatPercent(program.effective_cashback_bps)}</dd>
+          </dl>
+        </section>
+      ) : (
+        <p>Program not found on testnet.</p>
+      )
+    }
+  </main>
+</BaseLayout>
