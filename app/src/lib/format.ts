@@ -29,3 +29,22 @@ export function readableTextColor(hex: string): string {
 export function escapeXml(text: string): string {
   return text.replace(/[<>&'"]/g, (char) => `&#${char.charCodeAt(0)};`);
 }
+
+export function formatCardCode(code: string): string {
+  return code.length === 6 ? `${code.slice(0, 3)}-${code.slice(3)}` : code;
+}
+
+export function cardCodeOf(tokenId: string): string {
+  return formatCardCode(tokenId.split(':')[1] ?? '');
+}
+
+export function redemptionDisplayCode(contractCode: string): string {
+  const [tokenId, sequence] = contractCode.split('#');
+  return `${formatCardCode(tokenId.split(':')[1] ?? '')}-${sequence}`;
+}
+
+export function compactCode(code: string): string {
+  return code.toUpperCase().replace(/[^0-9A-Z]/g, '');
+}
+
+export const BALANCE_CODE_PATTERN = /^[0-9A-Z]{6}\d+$/;

@@ -1,10 +1,10 @@
 import type { APIRoute } from 'astro';
 import { nearToYocto } from 'near-api-js';
-import { fairlyContract, getPassesByOwner, provider } from '../../lib/near';
+import { getPassesByOwner, provider } from '../../lib/near';
 import { clientKey, isRateLimited } from '../../lib/server/rate-limit';
 import { contractErrorCode, failure, json } from '../../lib/server/responses';
-import { assertSucceeded, contractResult, recordEvents, type ExecutionOutcome } from '../../lib/server/events';
-import { demoCashierAccount, demoProgramSlug, sponsorAccount, sponsorAmountNear } from '../../lib/server/signers';
+import { issuePass } from '../../lib/server/cashier';
+import { demoProgramSlug, sponsorAccount, sponsorAmountNear } from '../../lib/server/signers';
 
 const IMPLICIT_ACCOUNT = /^[0-9a-f]{64}$/;
 
@@ -41,14 +41,7 @@ export const POST: APIRoute = async ({ request }) => {
       return json({ accountId, funded, tokenId: null });
     }
 
-    const outcome = (await demoCashierAccount().callFunctionRaw({
-      contractId: fairlyContract,
-      methodName: 'issue_pass',
-      args: { slug, owner: accountId },
-    })) as unknown as ExecutionOutcome;
-    await recordEvents(outcome);
-    assertSucceeded(outcome);
-    const tokenId = contractResult<string>(outcome);
+    const tokenId = await issuePass(slug, accountId);
     return json({ accountId, funded, tokenId });
   } catch (error) {
     return failure(contractErrorCode(error), 502);

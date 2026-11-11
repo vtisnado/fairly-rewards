@@ -1,6 +1,6 @@
-import { SUPABASE_SECRET_KEY, SUPABASE_URL } from 'astro:env/server';
 import { base64Decode } from 'near-api-js';
 import { fairlyContract } from '../near';
+import { insertRows } from './supabase';
 
 const EVENT_PREFIX = 'EVENT_JSON:';
 
@@ -72,17 +72,7 @@ export function assertSucceeded(outcome: ExecutionOutcome): void {
 
 export async function recordEvents(outcome: ExecutionOutcome): Promise<void> {
   const rows = contractEvents(outcome);
-  if (rows.length === 0) return;
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/events?on_conflict=tx_hash,log_index`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_SECRET_KEY,
-      'content-type': 'application/json',
-      prefer: 'resolution=ignore-duplicates,return=minimal',
-    },
-    body: JSON.stringify(rows),
-  });
-  if (!response.ok) {
-    throw new Error(`EVENTS_NOT_RECORDED: ${response.status}`);
+  if (rows.length > 0) {
+    await insertRows('events', rows, 'tx_hash,log_index');
   }
 }

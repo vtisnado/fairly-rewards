@@ -6,7 +6,7 @@ import QrCode from '../ui/QrCode.vue';
 import type { IconName } from '../../lib/icons';
 import type { PassView, ProgramView, PurchaseResult } from '../../lib/types';
 import { accountUrl, getPass, getPassesByOwner } from '../../lib/near';
-import { baseUnitsToDollars, dollarsToBaseUnits, formatMoney, formatPercent } from '../../lib/format';
+import { baseUnitsToDollars, dollarsToBaseUnits, formatCardCode, formatMoney, formatPercent, redemptionDisplayCode } from '../../lib/format';
 import { addActivity, loadActivity, type ActivityEntry } from '../../lib/customer-activity';
 import { subscribeToEvents, type ConnectionState } from '../../lib/realtime';
 import {
@@ -88,14 +88,7 @@ function isPerkClaimed(index: number): boolean {
   return ((pass.value?.claimed_perks ?? 0) & (1 << index)) !== 0;
 }
 
-function formatCardCode(code: string): string {
-  return code.length === 6 ? `${code.slice(0, 3)}-${code.slice(3)}` : code;
-}
-
-function shortCode(code: string): string {
-  const [token, sequence] = code.split('#');
-  return `${token.split(':')[1] ?? ''}-${sequence}`;
-}
+const shortCode = redemptionDisplayCode;
 
 async function findPass(accountId: string): Promise<PassView | null> {
   const passes = await getPassesByOwner(accountId);

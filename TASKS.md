@@ -53,10 +53,11 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 | T2.3 | Wallet Selector for merchant/cashier | ONB-006 | todo |
 | T2.4 | Merchant: create program + dashboard + cashiers + join QR | UI-001..004 | todo |
 | T2.5 | Customer onboarding, join and relay routes | ONB-001..010, DEMO-005 | done |
-| T2.6 | Cashier POS: issue pass, record purchase, confirm redeems | UI-010..012, BUY-008 | todo |
+| T2.6 | Cashier POS: identify card (camera, code, recent), keypad purchase, honor balance codes live | UI-010..014, EVT-007 | done |
 | T2.7 | Customer pass screen + actions | UI-020..023 | done |
 | T2.8 | Events in Supabase and real-time screens without polling | EVT-001..005 | done |
 | T2.9 | Block follower for events that skip the API (cashier signing directly) | EVT-006 | todo |
+| T2.11 | Cashier device function-call keys for non-demo programs | BUY-008, UI-014 | todo |
 | T2.10 | Customer key recovery (passkey proposed, pending decision) | ONB-002 | todo |
 
 ## Phase 3: Market, demo, polish (2026-11-13)

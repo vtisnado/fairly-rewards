@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CashierApp from '../../components/cashier/CashierApp.vue';
+import { getProgram } from '../../lib/near';
+import { cashierLocation } from '../../lib/server/cashier';
+import { demoProgramSlug } from '../../lib/server/signers';
+
+const slug = Astro.params.slug;
+const program = slug ? await getProgram(slug).catch(() => null) : null;
+if (!program || program.slug !== demoProgramSlug) {
+  return Astro.redirect('/404');
+}
+const locationId = await cashierLocation(program.slug);
+---
+
+<BaseLayout title={`${program.name} counter`} description="Scan, type the total, add cashback." surface="ink">
+  <CashierApp client:only="vue" initialProgram={program} locationId={locationId} />
+</BaseLayout>
