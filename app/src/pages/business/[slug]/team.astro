@@ -10,6 +10,6 @@ if (!program) {
 }
 ---
 
-<BaseLayout title={`Join ${program.name}`} description="Join the team as a manager." surface="backoffice">
+<BaseLayout title={`Join ${program.name}`} description="Join the team as a manager." surface="backoffice" noindex>
   <TeamJoin client:only="vue" program={program} />
 </BaseLayout>

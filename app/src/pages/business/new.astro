@@ -4,6 +4,6 @@ import BusinessStart from '../../components/merchant/BusinessStart.vue';
 import { demoProgramSlug } from '../../lib/server/signers';
 ---
 
-<BaseLayout title="Set up your program" description="Brand, rewards, locations and test money in five steps." surface="backoffice">
+<BaseLayout title="Set up your program" description="Brand, rewards, locations and test money in five steps." surface="backoffice" noindex>
   <BusinessStart client:only="vue" demoSlug={demoProgramSlug} startWizard={true} />
 </BaseLayout>

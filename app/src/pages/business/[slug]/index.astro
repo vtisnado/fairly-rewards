@@ -12,6 +12,6 @@ if (!program) {
 const joinUrl = new URL(`/join/${program.slug}`, Astro.url.origin).toString();
 ---
 
-<BaseLayout title={`${program.name} business`} description="Sales, cashback and members at a glance." surface="backoffice">
+<BaseLayout title={`${program.name} business`} description="Sales, cashback and members at a glance." surface="backoffice" noindex>
   <MerchantApp client:only="vue" initialProgram={program} joinUrl={joinUrl} isDemo={program.slug === demoProgramSlug} />
 </BaseLayout>

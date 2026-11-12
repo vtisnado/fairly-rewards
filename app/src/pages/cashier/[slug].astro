@@ -14,6 +14,6 @@ const isDemo = program.slug === demoProgramSlug;
 const demoLocationId = isDemo ? await cashierLocation(program.slug) : null;
 ---
 
-<BaseLayout title={`${program.name} counter`} description="Scan, type the total, add cashback." surface="ink">
+<BaseLayout title={`${program.name} counter`} description="Scan, type the total, add cashback." surface="ink" noindex>
   <CashierApp client:only="vue" initialProgram={program} demoLocationId={demoLocationId} isDemo={isDemo} />
 </BaseLayout>

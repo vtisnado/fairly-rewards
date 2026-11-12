@@ -6,9 +6,16 @@ interface Props {
   title: string;
   description?: string;
   surface?: 'cream' | 'backoffice' | 'ink';
+  noindex?: boolean;
+  jsonLd?: Record<string, unknown>[];
 }
 
-const { title, description = 'Loyalty cards with real money inside.', surface = 'cream' } = Astro.props;
+const { title, description = 'Loyalty cards with real money inside.', surface = 'cream', noindex = false, jsonLd = [] } = Astro.props;
+const origin = (Astro.site ?? Astro.url).origin;
+const canonical = new URL(Astro.url.pathname, origin).href;
+const fullTitle = `${title} · Fairly`;
+const ogImage = new URL('/og.png', origin).href;
+const ogImageAlt = 'Fairly, loyalty cards with money inside, next to a Cafe Esquina loyalty card showing a $12.40 balance';
 const surfaceClass = {
   cream: 'bg-cream text-ink',
   backoffice: 'bg-bo-bg text-bo-text',
@@ -22,8 +29,31 @@ const surfaceClass = {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <title>{title} · Fairly</title>
+    <title>{fullTitle}</title>
+    <link rel="canonical" href={canonical} />
+    <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
+    <meta name="theme-color" content="#17161A" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Fairly" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogImageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
+    {jsonLd.length > 0 && <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

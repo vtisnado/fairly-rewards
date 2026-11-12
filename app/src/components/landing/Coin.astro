@@ -1,0 +1,22 @@
+---
+interface Props {
+  id: string;
+  class?: string;
+  delay?: number;
+}
+
+const { id, class: className = 'size-10', delay = 0 } = Astro.props;
+---
+
+<svg viewBox="0 0 48 48" class={className} aria-hidden="true">
+  <defs>
+    <clipPath id={`coin-${id}`}><circle cx="24" cy="23" r="20"></circle></clipPath>
+  </defs>
+  <circle cx="24" cy="26" r="20" fill="#E8A21E"></circle>
+  <circle cx="24" cy="23" r="20" fill="#FFC23D"></circle>
+  <circle cx="24" cy="23" r="14.5" fill="none" stroke="#E8A21E" stroke-width="2.4" stroke-dasharray="3 3.2"></circle>
+  <text x="24" y="29.5" text-anchor="middle" font-family="Outfit" font-weight="800" font-size="17" fill="#B9760B">$</text>
+  <g clip-path={`url(#coin-${id})`}>
+    <polygon class="coin-shine" points="-40,34 -34,40 40,-34 34,-40" fill="#fff" fill-opacity=".75" style={`animation-delay:${delay}s`}></polygon>
+  </g>
+</svg>

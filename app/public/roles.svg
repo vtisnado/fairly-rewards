@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 720" font-family="Outfit, system-ui, sans-serif">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M1 1 L9 5 L1 9 Z" fill="#17161A"/>
+    </marker>
+  </defs>
+  <style>
+    .flow { fill: none; stroke: #17161A; stroke-opacity: .55; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 3 9; animation: flow 1.1s linear infinite; }
+    @keyframes flow { to { stroke-dashoffset: -24; } }
+    .t1 { font-size: 30px; font-weight: 800; fill: #17161A; }
+    .t2 { font-size: 15px; font-weight: 600; fill: #17161A; opacity: .5; }
+    .li { font-size: 16px; font-weight: 500; fill: #17161A; opacity: .8; }
+    .dot { fill: #F2654F; }
+    .num { font-size: 17px; font-weight: 800; fill: #fff; }
+    .step { font-size: 15px; font-weight: 700; fill: #17161A; }
+    .bob { animation: bob 4s ease-in-out infinite; }
+    .bob2 { animation: bob 4s ease-in-out -2s infinite; }
+    @keyframes bob { 0%,100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+  </style>
+  <path class="flow" marker-end="url(#ah)" d="M880 262 C 840 262, 815 262, 788 262"/>         
+  <path class="flow" marker-end="url(#ah)" d="M690 412 C 760 455, 850 445, 874 404"/>         
+  <path class="flow" marker-end="url(#ah)" d="M1050 300 C 1110 320, 1135 380, 1140 440"/>     
+  <path class="flow" marker-end="url(#ah)" d="M1110 690 C 800 716, 300 716, 150 596"/>         
+  <path class="flow" marker-end="url(#ah)" d="M378 290 L 448 290"/>                            
+  <g transform="translate(60 160)"><g class="bob">
+    <rect x="0" y="0" width="310" height="200" rx="14" fill="#17161A"/>
+    <rect x="12" y="12" width="286" height="176" rx="8" fill="#F4F4F2"/>
+    <rect x="24" y="24" width="150" height="70" rx="8" fill="#fff"/>
+    <text x="34" y="44" font-size="10" font-weight="600" fill="#17161A" opacity=".5">Sales from members</text>
+    <text x="34" y="76" font-size="26" font-weight="800" fill="#17161A">$4,820</text>
+    <rect x="182" y="24" width="104" height="32" rx="8" fill="#fff"/><text x="192" y="45" font-size="12" font-weight="700" fill="#17161A">20x return</text>
+    <rect x="182" y="62" width="104" height="32" rx="8" fill="#fff"/><text x="192" y="83" font-size="12" font-weight="700" fill="#17161A">61% back</text>
+    <rect x="24" y="104" width="262" height="72" rx="8" fill="#fff"/>
+    <path d="M36 164 L70 150 L104 156 L138 136 L172 140 L206 122 L240 126 L274 112" stroke="#F2654F" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M-20 200 H330 L312 218 H-2 Z" fill="#2E2C33"/>
+  </g></g>
+  <text x="60" y="425" class="t1">Business</text>
+  <text x="60" y="449" class="t2">Laptop or phone</text>
+  <g class="li"><circle class="dot" cx="66" cy="478" r="4"/><text x="80" y="483">Create and brand the card</text>
+    <circle class="dot" cx="66" cy="506" r="4"/><text x="80" y="511">Add rewards money</text>
+    <circle class="dot" cx="66" cy="534" r="4"/><text x="80" y="539">Connect counter devices</text>
+    <circle class="dot" cx="66" cy="562" r="4"/><text x="80" y="567">See sales and returns</text></g>
+  <g transform="translate(455 160)"><g class="bob2">
+    <rect width="320" height="235" rx="22" fill="#17161A"/>
+    <rect x="12" y="12" width="296" height="211" rx="14" fill="#232127"/>
+    <rect x="28" y="40" width="110" height="110" rx="12" fill="#000" opacity=".45"/>
+    <path d="M40 60 v-10 h10 M126 60 v-10 h-10 M40 130 v10 h10 M126 130 v10 h-10" stroke="#F2654F" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <rect x="44" y="92" width="78" height="3" rx="1.5" fill="#F2654F"/>
+    <text x="160" y="58" font-size="26" font-weight="800" fill="#fff">$5.00</text>
+    <g fill="#fff" opacity=".1">
+      <rect x="160" y="72" width="40" height="28" rx="6"/><rect x="206" y="72" width="40" height="28" rx="6"/><rect x="252" y="72" width="40" height="28" rx="6"/>
+      <rect x="160" y="106" width="40" height="28" rx="6"/><rect x="206" y="106" width="40" height="28" rx="6"/><rect x="252" y="106" width="40" height="28" rx="6"/>
+      <rect x="160" y="140" width="40" height="28" rx="6"/><rect x="206" y="140" width="40" height="28" rx="6"/><rect x="252" y="140" width="40" height="28" rx="6"/>
+    </g>
+    <rect x="160" y="180" width="132" height="30" rx="8" fill="#F2654F"/>
+    <text x="226" y="200" text-anchor="middle" font-size="12" font-weight="800" fill="#17161A">Add to card</text>
+  </g></g>
+  <text x="455" y="425" class="t1">Counter</text>
+  <text x="455" y="449" class="t2">Tablet or phone at the till</text>
+  <g class="li"><circle class="dot" cx="461" cy="478" r="4"/><text x="475" y="483">Scan the customer's code</text>
+    <circle class="dot" cx="461" cy="506" r="4"/><text x="475" y="511">Type the total</text>
+    <circle class="dot" cx="461" cy="534" r="4"/><text x="475" y="539">Accept balance codes</text>
+    <circle class="dot" cx="461" cy="562" r="4"/><text x="475" y="567">Cannot withdraw money</text></g>
+  <g transform="translate(880 110)"><g class="bob">
+    <rect width="170" height="320" rx="28" fill="#17161A"/>
+    <rect x="9" y="9" width="152" height="302" rx="20" fill="#FFF6EC"/>
+    <rect x="60" y="16" width="50" height="12" rx="6" fill="#17161A"/>
+    <rect x="20" y="42" width="130" height="82" rx="12" fill="#F2654F"/>
+    <circle cx="36" cy="58" r="9" fill="#17161A"/>
+    <text x="30" y="98" font-size="9" font-weight="600" fill="#17161A" opacity=".7">Balance</text>
+    <text x="30" y="116" font-size="20" font-weight="800" fill="#17161A">$3.75</text>
+    <rect x="104" y="50" width="38" height="14" rx="7" fill="#AEB9C6"/>
+    <rect x="20" y="134" width="130" height="6" rx="3" fill="#17161A" opacity=".1"/><rect x="20" y="134" width="80" height="6" rx="3" fill="#AEB9C6"/>
+    <g fill="#fff"><rect x="20" y="152" width="130" height="30" rx="8"/><rect x="20" y="188" width="130" height="30" rx="8"/><rect x="20" y="224" width="130" height="30" rx="8"/></g>
+    <g fill="#FFF3C4"><rect x="118" y="160" width="26" height="14" rx="4"/><rect x="118" y="196" width="26" height="14" rx="4"/><rect x="118" y="232" width="26" height="14" rx="4"/></g>
+    <path d="M9 272H161V291A20 20 0 0 1 141 311H29A20 20 0 0 1 9 291Z" fill="#fff"/>
+    <rect x="70" y="262" width="30" height="30" rx="8" fill="#F2654F"/>
+  </g></g>
+  <text x="880" y="470" class="t1">Customer</text>
+  <text x="880" y="494" class="t2">Own phone, no app</text>
+  <g class="li"><circle class="dot" cx="886" cy="523" r="4"/><text x="900" y="528">Show the card code</text>
+    <circle class="dot" cx="886" cy="551" r="4"/><text x="900" y="556">Earn and level up</text>
+    <circle class="dot" cx="886" cy="579" r="4"/><text x="900" y="584">Spend the balance</text>
+    <circle class="dot" cx="886" cy="607" r="4"/><text x="900" y="612">Sell the card</text></g>
+  <g transform="translate(1096 450)"><g class="bob2">
+    <rect width="96" height="170" rx="18" fill="#17161A"/>
+    <rect x="7" y="7" width="82" height="156" rx="12" fill="#F4F4F2"/>
+    <rect x="15" y="26" width="66" height="42" rx="7" fill="#FFD84D"/>
+    <rect x="15" y="76" width="66" height="8" rx="4" fill="#17161A" opacity=".15"/>
+    <rect x="15" y="130" width="66" height="22" rx="6" fill="#17161A"/>
+  </g></g>
+  <text x="1144" y="648" text-anchor="middle" font-size="18" font-weight="800" fill="#17161A">Buyer</text>
+  <path class="flow" marker-end="url(#ah)" d="M215 165 C 420 14, 820 14, 958 96"/>
+  <g transform="translate(470 28)"><circle cx="18" cy="18" r="18" fill="#17161A"/><text x="18" y="24" text-anchor="middle" class="num">1</text><text x="46" y="24" class="step">Customer scans the poster and gets a card</text></g>
+  <g transform="translate(778 196)"><circle cx="18" cy="18" r="18" fill="#17161A"/><text x="18" y="24" text-anchor="middle" class="num">2</text><text x="-4" y="54" class="step" font-size="13">Shows code</text></g>
+  <g transform="translate(712 432)"><circle cx="18" cy="18" r="18" fill="#17161A"/><text x="18" y="24" text-anchor="middle" class="num">3</text><text x="46" y="24" class="step">5% to the card</text></g>
+  <g transform="translate(1150 330)"><circle cx="18" cy="18" r="18" fill="#17161A"/><text x="18" y="24" text-anchor="middle" class="num">4</text><text x="-36" y="62" class="step" font-size="13">Sells the card</text></g>
+  <g transform="translate(520 640)"><circle cx="18" cy="18" r="18" fill="#17161A"/><text x="18" y="24" text-anchor="middle" class="num">5</text><text x="46" y="24" class="step">The business earns a share of the resale</text></g>
+  <g transform="translate(380 238)"><text x="34" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="#17161A" opacity=".6">setup</text></g>
+</svg>

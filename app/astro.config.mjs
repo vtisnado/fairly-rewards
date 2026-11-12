@@ -21,6 +21,7 @@ const connectSources = [
 const secret = () => envField.string({ context: 'server', access: 'secret' });
 
 export default defineConfig({
+  site: env.PUBLIC_APP_URL ?? 'http://localhost:3000',
   output: 'server',
   adapter: cloudflare({ imageService: 'passthrough' }),
   integrations: [vue()],

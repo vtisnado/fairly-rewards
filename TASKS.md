@@ -72,7 +72,7 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 | Id | Task | Specs | Status |
 |---|---|---|---|
 | T3.1 | Market screen + buy flow | UI-030, SALE-008..010 | done |
-| T3.2 | Landing page with demo roles | UI-050, DEMO-003 | todo |
+| T3.2 | Landing page with demo roles | UI-050, DEMO-003 | done |
 | T3.3 | Seed and smoke scripts | DEMO-001, 002, 004 | todo |
 | T3.4 | Deploy to Cloudflare (Pages + Workers) and Supabase; env vars; verify on phone | NFR-008..010 | todo |
 | T3.5 | Stretch: email/social login | ONB-007 | todo |

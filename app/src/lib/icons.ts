@@ -30,6 +30,7 @@ export const ICONS = {
   star: '<path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7L12 3Z" fill="currentColor"/>',
   tablet: '<rect x="5" y="2.5" width="14" height="19" rx="2.5" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="18" r="1.2" fill="currentColor"/>',
   tag: '<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9-9-9Z" fill="currentColor"/><circle cx="8" cy="8" r="1.6" fill="#fff"/>',
+  utensils: '<path d="M6 3v7M9.5 3v7M6 10a2 2 0 0 0 3.5 0M7.75 10v11" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 21V3c-2.7 1.4-4 4.2-4 8h4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
   users: '<circle cx="9" cy="8" r="3.5" fill="currentColor"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0H2.5Z" fill="currentColor"/><circle cx="17" cy="9" r="2.6" fill="currentColor" opacity=".6"/><path d="M16 14a5 5 0 0 1 6 6h-4.5" fill="currentColor" opacity=".6"/>',
   wallet: '<rect x="3" y="6" width="18" height="14" rx="2.5" fill="currentColor"/><path d="M5 6V5a2 2 0 0 1 2-2h10" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="16.5" cy="13" r="1.5" fill="#fff"/>',
 } as const;

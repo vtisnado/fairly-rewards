@@ -1,0 +1,291 @@
+:root {
+  --slant: 44px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --slant: 110px;
+  }
+}
+
+.hero {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--slant)), 0 100%);
+}
+
+.footer-slant {
+  clip-path: polygon(0 var(--slant), 100% 0, 100% 100%, 0 100%);
+}
+
+.perf {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--slant);
+  width: 100%;
+  pointer-events: none;
+}
+
+.marquee-band {
+  margin-top: calc(6px - var(--slant));
+  transform-origin: center;
+}
+
+.marquee-tilt {
+  width: 110vw;
+  margin-left: -5vw;
+  transform: rotate(-4deg);
+  transform: rotate(atan2(calc(-1 * var(--slant)), 100vw));
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 55s linear infinite;
+}
+
+.marquee-band:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+.highlight {
+  position: relative;
+  white-space: nowrap;
+}
+
+.highlight svg {
+  position: absolute;
+  left: -2%;
+  bottom: -0.1em;
+  width: 104%;
+  height: 0.3em;
+}
+
+.highlight path {
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  animation: draw 1.2s 0.5s ease forwards;
+}
+
+.float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.spin-slow {
+  animation: spin-slow 60s linear infinite;
+}
+
+.pop-in {
+  opacity: 0;
+  animation: pop-in 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.25) forwards;
+}
+
+.coin-shine {
+  animation: coin-shine 4.5s ease-in-out infinite;
+}
+
+.toast-loop {
+  opacity: 0;
+  animation: toast-loop 6s ease-in-out infinite;
+}
+
+.btn-arrow .arr {
+  transition: transform 0.25s ease;
+}
+
+.btn-arrow:hover .arr {
+  transform: translateX(4px);
+}
+
+.logo-word {
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .logo-word {
+    background: linear-gradient(105deg, #17161a 0 42%, #f2654f 50%, #17161a 58% 100%) 100% 0 / 250% 100% no-repeat;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: logo-hop 6s ease-in-out infinite, logo-shine 6s ease-in-out infinite;
+  }
+}
+
+.nav-link {
+  position: relative;
+  transition: color 0.2s;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 100%;
+  bottom: -6px;
+  height: 2px;
+  background: var(--color-coral);
+  transition: right 0.25s ease;
+}
+
+.nav-link:hover::after,
+.nav-link:focus-visible::after {
+  right: 0;
+}
+
+.paper-card {
+  transform: rotate(-14deg) translate(-40px, 30px) scale(0.9);
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.new-card {
+  transform: rotate(4deg);
+}
+
+.bar {
+  height: var(--h);
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes logo-hop {
+  0%, 8%, 100% { transform: translateY(0); }
+  3% { transform: translateY(-7px); }
+  5.5% { transform: translateY(0) scale(1.04, 0.94); }
+}
+
+@keyframes logo-shine {
+  0%, 8% { background-position: 100% 0; }
+  22%, 100% { background-position: 0% 0; }
+}
+
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-12px) rotate(var(--r, 0deg)); }
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.6) translateY(20px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes coin-shine {
+  0% { transform: translate(-12px, -12px); }
+  28%, 100% { transform: translate(62px, 62px); }
+}
+
+@keyframes toast-loop {
+  0%, 8% { opacity: 0; transform: translateY(-16px); }
+  14%, 60% { opacity: 1; transform: none; }
+  68%, 100% { opacity: 0; transform: translateY(-16px); }
+}
+
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes reveal-left {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes reveal-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes reveal-zoom {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes paper-away {
+  from { transform: none; filter: none; opacity: 1; }
+  to { transform: rotate(-14deg) translate(-40px, 30px) scale(0.9); filter: grayscale(1); opacity: 0.5; }
+}
+
+@keyframes card-in {
+  from { transform: translateX(80px) rotate(12deg); opacity: 0; }
+  to { transform: rotate(4deg); opacity: 1; }
+}
+
+@keyframes bar-grow {
+  from { height: 6px; }
+  to { height: var(--h); }
+}
+
+@supports (animation-timeline: view()) {
+  .reveal,
+  .reveal-left,
+  .reveal-right,
+  .reveal-zoom {
+    animation-fill-mode: both;
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+    animation-timeline: view();
+    animation-range: entry 0% entry 55%;
+  }
+  .reveal { animation-name: reveal; }
+  .reveal-left { animation-name: reveal-left; }
+  .reveal-right { animation-name: reveal-right; }
+  .reveal-zoom { animation-name: reveal-zoom; }
+
+  .paper-card {
+    animation: paper-away linear both;
+    animation-timeline: view();
+    animation-range: entry 30% cover 45%;
+  }
+  .new-card {
+    animation: card-in cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+    animation-timeline: view();
+    animation-range: entry 40% cover 50%;
+  }
+  .bar {
+    animation: bar-grow ease-out both;
+    animation-timeline: view();
+    animation-range: entry 20% cover 45%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track,
+  .float,
+  .spin-slow,
+  .highlight path,
+  .coin-shine,
+  .toast-loop,
+  .pop-in,
+  .reveal,
+  .reveal-left,
+  .reveal-right,
+  .reveal-zoom,
+  .paper-card,
+  .new-card,
+  .bar {
+    animation: none;
+  }
+  .pop-in,
+  .reveal,
+  .reveal-left,
+  .reveal-right,
+  .reveal-zoom {
+    opacity: 1;
+    transform: none;
+  }
+  .highlight path {
+    stroke-dashoffset: 0;
+  }
+  .toast-loop {
+    opacity: 0;
+  }
+}
