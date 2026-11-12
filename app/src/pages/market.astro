@@ -1,0 +1,8 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import MarketApp from '../components/market/MarketApp.vue';
+---
+
+<BaseLayout title="Market" description="Loyalty cards with money already inside, for sale.">
+  <MarketApp client:only="vue" />
+</BaseLayout>

@@ -6,6 +6,7 @@ import QrCode from '../ui/QrCode.vue';
 import type { IconName } from '../../lib/icons';
 import type { PassView, ProgramView, PurchaseResult } from '../../lib/types';
 import { accountUrl, getPass, getPassesByOwner } from '../../lib/near';
+import { businessTypeOf } from '../../lib/business-types';
 import { baseUnitsToDollars, dollarsToBaseUnits, formatCardCode, formatMoney, formatPercent, redemptionDisplayCode } from '../../lib/format';
 import { addActivity, loadActivity, type ActivityEntry } from '../../lib/customer-activity';
 import { subscribeToEvents, type ConnectionState } from '../../lib/realtime';
@@ -19,7 +20,7 @@ import {
   type CustomerWallet,
 } from '../../lib/customer-wallet';
 
-type Screen = 'loading' | 'join' | 'intro' | 'waiting' | 'home' | 'code';
+type Screen = 'loading' | 'join' | 'intro' | 'waiting' | 'home' | 'code' | 'sold';
 type Sheet = 'use' | 'code' | 'sell' | 'listed' | 'levels' | 'help' | null;
 
 const props = defineProps<{ program: ProgramView; isDemo: boolean }>();
@@ -36,6 +37,8 @@ const SLIDES = [
 ];
 
 const screen = ref<Screen>('loading');
+const businessIcon = businessTypeOf(props.program.mcc).icon;
+const soldFor = ref<{ price: string; received: string } | null>(null);
 const sheet = ref<Sheet>(null);
 const slide = ref(0);
 const wallet = ref<CustomerWallet | null>(null);
@@ -128,7 +131,17 @@ async function refresh() {
   if (!wallet.value) return;
   const next = pass.value ? await getPass(pass.value.token_id) : await findPass(wallet.value.accountId);
   if (!next || next.owner !== wallet.value.accountId) {
+    const previous = pass.value;
     pass.value = null;
+    if (previous?.listing_price && next && next.owner !== wallet.value.accountId) {
+      const price = BigInt(previous.listing_price);
+      const royalty = (price * BigInt(props.program.royalty_bps)) / 10_000n;
+      soldFor.value = { price: price.toString(), received: (price - royalty).toString() };
+      screen.value = 'sold';
+      stopListening();
+      listen();
+      return;
+    }
     if (screen.value === 'home' || screen.value === 'code') screen.value = 'waiting';
     return;
   }
@@ -299,7 +312,7 @@ onBeforeUnmount(stopListening);
     <section v-else-if="screen === 'join'" class="relative flex flex-1 flex-col overflow-hidden bg-ink px-6 pt-10 pb-8 text-cream">
       <div class="pointer-events-none absolute -top-24 -right-24 size-80 rounded-full opacity-25 blur-3xl" :style="{ background: program.brand_color }" />
       <div class="relative flex items-center gap-2 font-semibold">
-        <span class="grid size-9 place-items-center rounded-full text-ink" :style="{ background: program.brand_color }"><AppIcon name="cup" class="size-5" /></span>
+        <span class="grid size-9 place-items-center rounded-full text-ink" :style="{ background: program.brand_color }"><AppIcon :name="businessIcon" class="size-5" /></span>
         {{ program.name }}
       </div>
       <div class="relative mt-6 aspect-[1.15] w-full">
@@ -366,6 +379,13 @@ onBeforeUnmount(stopListening);
           <AppIcon name="arrow" class="size-7" />
         </button>
       </div>
+    </section>
+
+    <section v-else-if="screen === 'sold' && soldFor" class="flex flex-1 flex-col items-center justify-center bg-mint px-8 text-center">
+      <span class="grid size-20 place-items-center rounded-full bg-ink text-mint"><AppIcon name="check" class="size-10" /></span>
+      <p class="mt-5 text-4xl font-extrabold tracking-tight">Your card was sold</p>
+      <p class="mt-2 text-ink/70">Sold for {{ formatMoney(soldFor.price) }}. You received {{ formatMoney(soldFor.received) }} in test dollars; {{ program.name }} kept its {{ formatPercent(program.royalty_bps) }} share.</p>
+      <button class="mt-8 h-14 rounded-full bg-ink px-8 font-semibold text-white" @click="screen = 'waiting'">Start a new card</button>
     </section>
 
     <section v-else-if="screen === 'waiting'" class="flex flex-1 flex-col items-center justify-center px-8 text-center">
@@ -525,7 +545,7 @@ onBeforeUnmount(stopListening);
       <p class="mt-6 text-3xl leading-none font-extrabold tracking-tight">Show this<br />at the counter</p>
       <div class="mx-auto mt-8 size-72 animate-pop rounded-xl3 bg-white p-5"><QrCode :value="pass.token_id" /></div>
       <div class="mt-auto flex items-center gap-3 rounded-xl2 bg-white/10 p-4">
-        <span class="grid size-11 place-items-center rounded-full bg-coral text-ink"><AppIcon name="cup" class="size-5" /></span>
+        <span class="grid size-11 place-items-center rounded-full bg-coral text-ink"><AppIcon :name="businessIcon" class="size-5" /></span>
         <div class="flex-1">
           <p class="font-semibold">{{ program.name }} · No. {{ cardNumber }}</p>
           <p class="text-sm text-white/60">{{ formatMoney(pass.balance) }} on card</p>
@@ -646,7 +666,7 @@ onBeforeUnmount(stopListening);
         <h3 class="text-3xl font-extrabold tracking-tight">How it works</h3>
         <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div class="rounded-xl2 bg-coral-soft p-4"><AppIcon name="qr" class="size-7" /><p class="mt-3 font-bold">Show code</p><p class="text-ink/60">when you pay</p></div>
-          <div class="rounded-xl2 bg-sun-soft p-4"><AppIcon name="cup" class="size-7" /><p class="mt-3 font-bold">Earn {{ formatPercent(program.cashback_bps) }}</p><p class="text-ink/60">on every visit</p></div>
+          <div class="rounded-xl2 bg-sun-soft p-4"><AppIcon :name="businessIcon" class="size-7" /><p class="mt-3 font-bold">Earn {{ formatPercent(program.cashback_bps) }}</p><p class="text-ink/60">on every visit</p></div>
           <div class="rounded-xl2 bg-lilac-soft p-4"><AppIcon name="star" class="size-7" /><p class="mt-3 font-bold">Level up</p><p class="text-ink/60">unlock perks</p></div>
           <div class="rounded-xl2 bg-mint-soft p-4"><AppIcon name="tag" class="size-7" /><p class="mt-3 font-bold">Spend or sell</p><p class="text-ink/60">value stays inside</p></div>
         </div>

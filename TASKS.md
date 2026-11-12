@@ -57,7 +57,7 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 | T2.14 | One program per business, time zone, manager role, device pause, location edit, boost suggestions | PROG-015..017, BST-010, LOC-010 | done |
 | T2.15 | Email linking for customers and businesses with NEAR Auth (FastAuth) | ONB-007 | todo |
 | T2.16 | Browser E2E tests with Playwright: customer and counter, balance codes, camera fallback, business setup, device pairing and pause, manager invite | UI-001..014 | done |
-| T2.17 | E2E for resale and royalties once the market exists | SALE-001..006 | todo |
+| T2.17 | E2E for resale and royalties | SALE-001..010 | done |
 | T2.18 | Non-extractable WebCrypto keys and strict CSP | NFR | todo |
 | T2.5 | Customer onboarding, join and relay routes | ONB-001..010, DEMO-005 | done |
 | T2.6 | Cashier POS: identify card (camera, code, recent), keypad purchase, honor balance codes live | UI-010..014, EVT-007 | done |
@@ -70,7 +70,7 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 ## Phase 3: Market, demo, polish (2026-11-13)
 | Id | Task | Specs | Status |
 |---|---|---|---|
-| T3.1 | Market screen + buy flow | UI-030, SALE-008 | todo |
+| T3.1 | Market screen + buy flow | UI-030, SALE-008..010 | done |
 | T3.2 | Landing page with demo roles | UI-050, DEMO-003 | todo |
 | T3.3 | Seed and smoke scripts | DEMO-001, 002, 004 | todo |
 | T3.4 | Deploy to Cloudflare (Pages + Workers) and Supabase; env vars; verify on phone | NFR-008..010 | todo |

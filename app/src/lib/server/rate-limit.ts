@@ -4,6 +4,7 @@ interface Window {
 }
 
 const windows = new Map<string, Window>();
+const DEVELOPMENT_MULTIPLIER = import.meta.env.DEV ? 50 : 1;
 
 export function isRateLimited(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now();
@@ -13,7 +14,7 @@ export function isRateLimited(key: string, limit: number, windowMs: number): boo
     return false;
   }
   current.count += 1;
-  return current.count > limit;
+  return current.count > limit * DEVELOPMENT_MULTIPLIER;
 }
 
 export function clientKey(request: Request, scope: string): string {

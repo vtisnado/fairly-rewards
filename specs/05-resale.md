@@ -9,6 +9,8 @@
 - **SALE-006** `get_listings(slug?)` MUST be a public view returning token id, price, balance, tier and seller.
 - **SALE-007** Each sale MUST emit a `sale` event with price, royalty and parties.
 - **SALE-008** The UI MUST show "value inside" (balance) next to the price so buyers see what they get.
+- **SALE-009** The market at `/market` lists every active listing with card art, balance, price and savings, filters by business type and sorts by savings, value, price or level. The buy dialog shows what the buyer pays, what the seller gets and the shop's royalty. Buying creates a browser account if needed, takes test dollars from the faucet and pays with `ft_transfer_call` through the relay. The list updates live from `listed`, `listing_cancelled` and `sale` events.
+- **SALE-010** When a listed card is sold, the seller's card screen says so and shows what they received after the royalty.
 
 ## Acceptance
 - Given royalty 5% and a Gold pass with 12 tUSDC listed at 10 tUSDC, when Juan buys it, then the merchant gets 0.50, Maria gets 9.50, and Juan owns the pass with 12 tUSDC balance.

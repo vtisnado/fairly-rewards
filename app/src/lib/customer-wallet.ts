@@ -1,6 +1,7 @@
 import { actions } from 'near-api-js';
 import { loadWallet as loadStored, newWallet, relay, saveWallet, walletFromSecret, type BrowserWallet } from './browser-wallet';
-import { fairlyContract } from './near';
+import { dollarsToBaseUnits } from './format';
+import { fairlyContract, getPass, tusdcContract } from './near';
 
 const STORAGE_KEY = 'fairly.customer.key';
 const ONE_YOCTO = 1n;
@@ -26,3 +27,33 @@ export const listPass = (wallet: CustomerWallet, tokenId: string, price: string)
 
 export const cancelListing = (wallet: CustomerWallet, tokenId: string) =>
   callFairly<void>(wallet, 'cancel_listing', { token_id: tokenId });
+
+const TRANSFER_GAS = 100_000_000_000_000n;
+
+export async function ensureCustomer(): Promise<CustomerWallet> {
+  const wallet = loadWallet() ?? createWallet();
+  const response = await fetch('/api/account', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ accountId: wallet.accountId }),
+  });
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? 'ACCOUNT_FAILED');
+  }
+  return wallet;
+}
+
+export async function buyPass(wallet: CustomerWallet, tokenId: string, price: string): Promise<boolean> {
+  const dollars = Number(price) / 1_000_000;
+  await relay(wallet, tusdcContract, [actions.functionCall('faucet', { amount: dollarsToBaseUnits(dollars) }, CALL_GAS, 0n)]);
+  await relay(wallet, tusdcContract, [
+    actions.functionCall(
+      'ft_transfer_call',
+      { receiver_id: fairlyContract, amount: price, msg: JSON.stringify({ buy: tokenId }) },
+      TRANSFER_GAS,
+      ONE_YOCTO,
+    ),
+  ]);
+  return (await getPass(tokenId))?.owner === wallet.accountId;
+}
