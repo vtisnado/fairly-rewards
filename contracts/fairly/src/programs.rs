@@ -8,20 +8,29 @@ use near_sdk::serde_json::json;
 use near_sdk::{assert_one_yocto, env, near, require, AccountId, Promise};
 
 impl Program {
-    pub fn is_boost_active(boost: &Boost, now_ns: u64) -> bool {
+    pub fn local_ns(&self, now_ns: u64) -> u64 {
+        let offset_ns = i64::from(self.utc_offset_minutes) * 60 * 1_000_000_000;
+        now_ns.saturating_add_signed(offset_ns)
+    }
+
+    pub fn local_day(&self, now_ns: u64) -> u64 {
+        self.local_ns(now_ns) / NANOS_PER_DAY
+    }
+
+    pub fn is_boost_active(&self, boost: &Boost, now_ns: u64) -> bool {
         if !boost.enabled {
             return false;
         }
         match boost.schedule {
             BoostSchedule::Range { starts_ns, ends_ns } => (starts_ns..ends_ns).contains(&now_ns),
-            BoostSchedule::Weekly { weekday } => weekday_of(now_ns) == weekday,
+            BoostSchedule::Weekly { weekday } => weekday_of(self.local_ns(now_ns)) == weekday,
         }
     }
 
     pub fn active_boost_ids(&self, now_ns: u64) -> Vec<u32> {
         self.boosts
             .iter()
-            .filter(|boost| Self::is_boost_active(boost, now_ns))
+            .filter(|boost| self.is_boost_active(boost, now_ns))
             .map(|boost| boost.id)
             .collect()
     }
@@ -30,7 +39,7 @@ impl Program {
         let boosted: u32 = self
             .boosts
             .iter()
-            .filter(|boost| Self::is_boost_active(boost, now_ns))
+            .filter(|boost| self.is_boost_active(boost, now_ns))
             .map(|boost| u32::from(boost.extra_bps))
             .sum::<u32>()
             + u32::from(self.cashback_bps);
@@ -42,6 +51,17 @@ impl Program {
             .iter_mut()
             .find(|location| location.id == location_id)
             .unwrap_or_else(|| env::panic_str(LOCATION_NOT_FOUND))
+    }
+
+    pub fn can_manage_location(&self, account_id: &AccountId, location_id: &str) -> bool {
+        account_id == &self.owner
+            || self.managers.iter().any(|manager| {
+                &manager.account_id == account_id
+                    && manager
+                        .location_id
+                        .as_deref()
+                        .map_or(true, |assigned| assigned == location_id)
+            })
     }
 
     pub fn cashier_location(&self, account_id: &AccountId) -> Option<&str> {
@@ -76,8 +96,15 @@ impl Fairly {
     pub fn create_program(&mut self, input: ProgramInput) -> Program {
         validate_slug(&input.slug);
         require!(!self.programs.contains_key(&input.slug), SLUG_TAKEN);
+        require!(
+            self.programs_by_owner
+                .get(&env::predecessor_account_id())
+                .map_or(true, |owned| owned.is_empty()),
+            ALREADY_HAS_PROGRAM
+        );
         validate_name(&input.name, 64);
         validate_mcc(input.mcc);
+        validate_utc_offset(input.utc_offset_minutes);
         validate_color(&input.brand_color);
         validate_cashback_bps(input.cashback_bps);
         validate_royalty_bps(input.royalty_bps);
@@ -109,8 +136,10 @@ impl Fairly {
             tiers: input.tiers,
             locations,
             cashiers: Vec::new(),
+            managers: Vec::new(),
             boosts: Vec::new(),
             next_boost_id: 1,
+            utc_offset_minutes: input.utc_offset_minutes,
             pool_balance: U128(0),
             pending_total: U128(0),
             total_cashback: U128(0),
@@ -159,6 +188,10 @@ impl Fairly {
         if let Some(bps) = update.cashback_bps {
             validate_cashback_bps(bps);
             program.cashback_bps = bps;
+        }
+        if let Some(minutes) = update.utc_offset_minutes {
+            validate_utc_offset(minutes);
+            program.utc_offset_minutes = minutes;
         }
         if let Some(perks) = update.perks {
             require!(perks.len() == program.tiers.len(), INVALID_TIERS);
@@ -243,7 +276,10 @@ impl Fairly {
     pub fn add_cashier(&mut self, slug: String, account_id: AccountId, location_id: String) {
         let initial_usage = env::storage_usage();
         let mut program = self.program(&slug);
-        Self::assert_program_owner(&program);
+        require!(
+            program.can_manage_location(&env::predecessor_account_id(), &location_id),
+            NOT_MANAGER
+        );
         program.location_mut(&location_id);
         program
             .cashiers
@@ -263,13 +299,63 @@ impl Fairly {
 
     pub fn remove_cashier(&mut self, slug: String, account_id: AccountId) {
         let mut program = self.program(&slug);
-        Self::assert_program_owner(&program);
+        let location_id = program
+            .cashier_location(&account_id)
+            .unwrap_or_else(|| env::panic_str(NOT_CASHIER))
+            .to_string();
+        require!(
+            program.can_manage_location(&env::predecessor_account_id(), &location_id),
+            NOT_MANAGER
+        );
         program
             .cashiers
             .retain(|cashier| cashier.account_id != account_id);
         self.save_program(program);
         events::emit(
             "cashier_removed",
+            json!({ "slug": slug, "account_id": account_id }),
+        );
+    }
+
+    pub fn add_manager(
+        &mut self,
+        slug: String,
+        account_id: AccountId,
+        location_id: Option<String>,
+    ) {
+        let initial_usage = env::storage_usage();
+        let mut program = self.program(&slug);
+        Self::assert_program_owner(&program);
+        if let Some(location_id) = location_id.as_deref() {
+            program.location_mut(location_id);
+        }
+        program
+            .managers
+            .retain(|manager| manager.account_id != account_id);
+        require!(program.managers.len() < MAX_MANAGERS, TOO_MANY_MANAGERS);
+        program.managers.push(Manager {
+            account_id: account_id.clone(),
+            location_id: location_id.clone(),
+        });
+        self.save_program(program);
+        self.charge_program_storage(&slug, initial_usage);
+        events::emit(
+            "manager_added",
+            json!({ "slug": slug, "account_id": account_id, "location_id": location_id }),
+        );
+    }
+
+    pub fn remove_manager(&mut self, slug: String, account_id: AccountId) {
+        let mut program = self.program(&slug);
+        Self::assert_program_owner(&program);
+        let before = program.managers.len();
+        program
+            .managers
+            .retain(|manager| manager.account_id != account_id);
+        require!(program.managers.len() < before, NOT_MANAGER);
+        self.save_program(program);
+        events::emit(
+            "manager_removed",
             json!({ "slug": slug, "account_id": account_id }),
         );
     }

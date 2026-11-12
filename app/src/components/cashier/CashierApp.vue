@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppIcon from '../ui/AppIcon.vue';
 import InfoTip from '../ui/InfoTip.vue';
 import QrScanner from './QrScanner.vue';
+import { demoCashier, deviceCashier, pairedDevice, type CashierClient } from '../../lib/cashier-client';
+import { formatPairingCode, localKey, requestPairing } from '../../lib/pairing';
 import type { IconName } from '../../lib/icons';
 import type { PassView, ProgramView, PurchaseResult } from '../../lib/types';
 import { getPass, getPassesByOwner, getProgram } from '../../lib/near';
@@ -25,7 +27,7 @@ interface WaitingCode {
   label: string;
 }
 
-const props = defineProps<{ initialProgram: ProgramView; locationId: string | null }>();
+const props = defineProps<{ initialProgram: ProgramView; demoLocationId: string | null; isDemo: boolean }>();
 
 const CATEGORIES: [string, IconName][] = [
   ['Coffee', 'cup'],
@@ -63,7 +65,31 @@ const connection = ref<ConnectionState>('connecting');
 const guide = ref(0);
 const unsubscribers: (() => void)[] = [];
 
-const location = computed(() => program.value.locations.find((entry) => entry.id === props.locationId) ?? null);
+const client = ref<CashierClient | null>(null);
+const deviceAccount = ref<string | null>(null);
+const locationId = computed(() =>
+  deviceAccount.value
+    ? program.value.cashiers.find((cashier) => cashier.account_id === deviceAccount.value)?.location_id ?? null
+    : props.demoLocationId,
+);
+const blocked = computed(() => !client.value || (!!deviceAccount.value && !locationId.value));
+const pairingCode = ref('');
+const pairingError = ref('');
+
+watch(blocked, (isBlocked, wasBlocked) => {
+  if (isBlocked && !wasBlocked && deviceAccount.value) showPairingCode();
+});
+
+async function showPairingCode() {
+  if (!deviceAccount.value) return;
+  pairingError.value = '';
+  try {
+    pairingCode.value = await requestPairing(program.value.slug, 'device', deviceAccount.value);
+  } catch {
+    pairingError.value = 'Could not get a code. Check the connection and try again.';
+  }
+}
+const location = computed(() => program.value.locations.find((entry) => entry.id === locationId.value) ?? null);
 const today = computed(() => {
   const current = location.value;
   const isToday = current && current.cashback_day === Math.floor(Date.now() / 86_400_000);
@@ -105,19 +131,10 @@ function fail(cause: unknown) {
     ALREADY_HONORED: 'This code was already used.',
     INVALID_CODE: 'That does not look like a balance code.',
     ALREADY_HAS_PASS: 'This customer already has a card.',
+    NOT_CASHIER: 'This device is no longer connected to the program.',
   }[message] ?? 'Something went wrong. Try again.';
 }
 
-async function post<T>(path: string, body: Record<string, unknown>): Promise<T> {
-  const response = await fetch(path, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ slug: program.value.slug, ...body }),
-  });
-  const result = (await response.json()) as T & { error?: string };
-  if (!response.ok) throw new Error(result.error ?? 'REQUEST_FAILED');
-  return result;
-}
 
 async function identify(raw: string) {
   error.value = '';
@@ -162,9 +179,7 @@ async function confirm() {
   error.value = '';
   try {
     if (mode.value === 'code') {
-      const honored = await post<{ kind: 'redeem' | 'perk'; amount: string | null; perk: string | null }>('/api/cashier/honor', {
-        code: code.value,
-      });
+      const honored = await client.value!.honor(code.value);
       doneTitle.value = honored.kind === 'redeem' ? `${formatMoney(honored.amount ?? '0')} off` : honored.perk ?? 'Perk';
       doneSubtitle.value = honored.kind === 'redeem' ? 'Balance used. Charge the rest as usual.' : 'Perk claimed. Hand it over.';
       waitingCodes.value = waitingCodes.value.filter((entry) => compactCode(entry.display) !== compactCode(code.value));
@@ -173,13 +188,9 @@ async function confirm() {
     }
     let tokenId = pass.value?.token_id;
     if (!tokenId && newOwner.value) {
-      tokenId = (await post<{ tokenId: string }>('/api/cashier/issue', { owner: newOwner.value })).tokenId;
+      tokenId = await client.value!.issue(newOwner.value);
     }
-    const result = await post<PurchaseResult>('/api/cashier/purchase', {
-      tokenId,
-      amountCents: cents.value,
-      category: category.value,
-    });
+    const result: PurchaseResult = await client.value!.purchase(tokenId!, cents.value, locationId.value ?? '', category.value);
     const tierName = program.value.tiers[result.tier_index]?.name;
     doneTitle.value = `+${formatMoney(result.cashback)}`;
     doneSubtitle.value = result.tier_up
@@ -231,7 +242,7 @@ async function onEvent(event: FairlyEvent) {
     loadWaitingCodes().catch(() => undefined);
     return;
   }
-  if (event.event === 'purchase' || event.event === 'pool_funded' || event.event === 'pending_settled') {
+  if (['purchase', 'pool_funded', 'pending_settled', 'cashier_added', 'cashier_removed'].includes(event.event)) {
     program.value = (await getProgram(program.value.slug)) ?? program.value;
   }
   if (event.event === 'pass_issued' || event.event === 'purchase') {
@@ -240,6 +251,14 @@ async function onEvent(event: FairlyEvent) {
 }
 
 onMounted(() => {
+  const device = pairedDevice(program.value.slug) ?? (props.isDemo ? null : localKey('device', program.value.slug));
+  if (device) {
+    deviceAccount.value = device.accountId;
+    client.value = deviceCashier(program.value.slug, device);
+    if (!locationId.value) showPairingCode();
+  } else {
+    client.value = demoCashier(program.value.slug);
+  }
   if (!localStorage.getItem('fairly.cashier.guide')) guide.value = 1;
   loadRecentCards().catch(() => undefined);
   loadWaitingCodes().catch(() => undefined);
@@ -269,7 +288,19 @@ function closeGuide() {
 </script>
 
 <template>
-  <div class="min-h-[calc(100dvh-1.75rem)] bg-ink2 text-white lg:grid lg:grid-cols-[1fr_minmax(360px,420px)]">
+  <div v-if="blocked" class="grid min-h-[calc(100dvh-1.75rem)] place-items-center bg-ink2 p-6 text-center text-white">
+    <div class="max-w-sm">
+      <span class="mx-auto grid size-14 place-items-center rounded-2xl bg-white/10"><AppIcon name="tablet" class="size-7" /></span>
+      <h1 class="mt-5 text-2xl font-bold">Connect this device</h1>
+      <p class="mt-2 text-white/60">In the {{ program.name }} dashboard, open Counter devices, choose Connect a device and type this code.</p>
+      <p v-if="pairingCode" class="mt-6 rounded-2xl bg-white/10 py-5 font-mono text-5xl font-extrabold tracking-[.2em]">{{ formatPairingCode(pairingCode) }}</p>
+      <p v-else-if="pairingError" class="mt-6 text-sm font-semibold text-coral">{{ pairingError }}</p>
+      <p v-else class="mt-6 text-white/60">Getting a code…</p>
+      <p class="mt-4 text-xs text-white/50">The code works for 15 minutes. This screen opens the counter by itself once the device is connected. The device key stays on this device.</p>
+      <button type="button" class="mt-6 h-11 rounded-xl bg-white/10 px-5 font-semibold hover:bg-white/15" @click="showPairingCode">New code</button>
+    </div>
+  </div>
+  <div v-else class="min-h-[calc(100dvh-1.75rem)] bg-ink2 text-white lg:grid lg:grid-cols-[1fr_minmax(360px,420px)]">
     <section class="flex flex-col px-5 pt-6 pb-4 lg:p-8">
       <header class="flex items-center justify-between gap-4">
         <div class="flex items-center gap-3">

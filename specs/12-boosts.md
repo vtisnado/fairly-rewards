@@ -9,3 +9,4 @@
 ## Acceptance
 - Given base 5% and an active Black Friday boost of +5%, a $10.00 purchase gives $1.00.
 - Given base 22% and a +5% boost, effective cashback is capped at 25%.
+- **BST-010** The boosts screen offers turned-off suggestions (Black Friday, Christmas week, New Year, Valentine's week, Mother's Day, Back to school, Slow Mondays) with dates computed for the next occurrence in the business time zone. Using one opens the boost form prefilled.

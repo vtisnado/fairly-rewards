@@ -20,6 +20,7 @@ export const GET: APIRoute = async ({ params, url }) => {
 
   const svg = renderCardArt({
     programName: program.name,
+    mcc: program.mcc,
     brandColor: program.brand_color,
     tierName: tier.name,
     tierIndex,

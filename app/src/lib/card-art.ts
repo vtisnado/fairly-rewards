@@ -1,7 +1,10 @@
+import { businessTypeOf } from './business-types';
 import { escapeXml, formatMoney, readableTextColor } from './format';
+import { ICONS } from './icons';
 
 export interface CardArtInput {
   programName: string;
+  mcc?: number;
   brandColor: string;
   tierName: string;
   tierIndex: number;
@@ -72,7 +75,7 @@ export function renderCardArt(input: CardArtInput): string {
   const finish = TIER_FINISHES[tierIndex % TIER_FINISHES.length];
   const ink = readableTextColor(brandColor);
   const sideInk = finish.premium ? INK : ink;
-  const initial = escapeXml(programName.trim().charAt(0).toUpperCase() || 'F');
+  const mark = ICONS[businessTypeOf(input.mcc ?? 0).icon];
   const name = escapeXml(programName);
   const tier = escapeXml(tierName);
   const hasBalance = input.balance !== undefined;
@@ -100,9 +103,9 @@ export function renderCardArt(input: CardArtInput): string {
     <rect width="640" height="400" fill="${brandColor}"/>
     ${finish.premium ? premiumField() : ''}
     <circle cx="560" cy="40" r="168" fill="none" stroke="${sideInk}" stroke-opacity=".15" stroke-width="4" stroke-dasharray="10 12"/>
-    <text x="548" y="230" text-anchor="middle" ${FONT} font-size="130" font-weight="800" fill="${sideInk}" fill-opacity=".1" transform="rotate(-12 548 190)">${initial}</text>
+    <g color="${sideInk}" opacity=".1" transform="rotate(-12 548 190) translate(468 110) scale(6.6)">${mark}</g>
     <circle cx="82" cy="82" r="34" fill="${ink}"/>
-    <text x="82" y="94" text-anchor="middle" ${FONT} font-size="34" font-weight="800" fill="${brandColor}">${initial}</text>
+    <g color="${brandColor}" transform="translate(64 64) scale(1.5)">${mark}</g>
     <text x="132" y="93" ${FONT} font-size="30" font-weight="600" fill="${ink}">${name}</text>
     ${number}
     ${balanceLabel}

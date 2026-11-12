@@ -1,21 +1,12 @@
 import type { APIRoute } from 'astro';
 import { nearToYocto } from 'near-api-js';
-import { getPassesByOwner, provider } from '../../lib/near';
+import { getPassesByOwner } from '../../lib/near';
+import { IMPLICIT_ACCOUNT, accountExists } from '../../lib/server/accounts';
 import { clientKey, isRateLimited } from '../../lib/server/rate-limit';
 import { contractErrorCode, failure, json } from '../../lib/server/responses';
 import { issuePass } from '../../lib/server/cashier';
 import { demoProgramSlug, sponsorAccount, sponsorAmountNear } from '../../lib/server/signers';
 
-const IMPLICIT_ACCOUNT = /^[0-9a-f]{64}$/;
-
-async function accountExists(accountId: string): Promise<boolean> {
-  try {
-    await provider.viewAccount({ accountId });
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export const POST: APIRoute = async ({ request }) => {
   if (isRateLimited(clientKey(request, 'join'), 5, 60 * 60 * 1000)) {

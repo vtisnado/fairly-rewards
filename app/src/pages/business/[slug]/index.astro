@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import MerchantApp from '../../../components/merchant/MerchantApp.vue';
+import { getProgram } from '../../../lib/near';
+import { demoProgramSlug } from '../../../lib/server/signers';
+
+const slug = Astro.params.slug;
+const program = slug ? await getProgram(slug).catch(() => null) : null;
+if (!program) {
+  return Astro.redirect('/404');
+}
+const joinUrl = new URL(`/join/${program.slug}`, Astro.url.origin).toString();
+---
+
+<BaseLayout title={`${program.name} business`} description="Sales, cashback and members at a glance." surface="backoffice">
+  <MerchantApp client:only="vue" initialProgram={program} joinUrl={joinUrl} isDemo={program.slug === demoProgramSlug} />
+</BaseLayout>

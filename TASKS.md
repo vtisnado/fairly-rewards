@@ -50,14 +50,18 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 |---|---|---|---|
 | T2.1 | Astro + Tailwind + Vue scaffold, testnet badge, NEAR config | UI-* | done |
 | T2.2 | Art route (SVG by tier) | UI-040, PASS-005 | done |
-| T2.3 | Wallet Selector for merchant/cashier | ONB-006 | todo |
-| T2.4 | Merchant: create program + dashboard + cashiers + join QR | UI-001..004 | todo |
+| T2.3 | Wallet Selector as an optional merchant signer | ONB-006 | todo |
+| T2.4 | Merchant dashboard at /business/<slug>: overview with custom range and comparison, customers and devices with detail panels, cashback pool with demo top-up, locations with demo add, join QR | UI-002, UI-004 | done |
+| T2.12 | Merchant self-serve: setup wizard, browser account, boosts, withdrawals, pause, device pairing, key backup | UI-001, UI-003, ONB-011, ONB-012 | done |
+| T2.13 | Install @astrojs/check and run type checks in Docker | NFR | todo |
+| T2.14 | One program per business, time zone, manager role, device pause, location edit, boost suggestions | PROG-015..017, BST-010, LOC-010 | done |
+| T2.15 | Email linking for customers and businesses with NEAR Auth (FastAuth) | ONB-007 | todo |
 | T2.5 | Customer onboarding, join and relay routes | ONB-001..010, DEMO-005 | done |
 | T2.6 | Cashier POS: identify card (camera, code, recent), keypad purchase, honor balance codes live | UI-010..014, EVT-007 | done |
 | T2.7 | Customer pass screen + actions | UI-020..023 | done |
 | T2.8 | Events in Supabase and real-time screens without polling | EVT-001..005 | done |
 | T2.9 | Block follower for events that skip the API (cashier signing directly) | EVT-006 | todo |
-| T2.11 | Cashier device function-call keys for non-demo programs | BUY-008, UI-014 | todo |
+| T2.11 | Cashier device keys for non-demo programs, paired by QR | BUY-008, UI-014 | done |
 | T2.10 | Customer key recovery (passkey proposed, pending decision) | ONB-002 | todo |
 
 ## Phase 3: Market, demo, polish (2026-11-13)

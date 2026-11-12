@@ -41,7 +41,7 @@ impl Fairly {
         let bps = program.effective_cashback_bps(now);
         let cashback = cashback_for(amount_cents, bps);
         let daily_cap = program.daily_cap.0;
-        let today = now / NANOS_PER_DAY;
+        let today = program.local_day(now);
         let location = program.location_mut(&location_id);
         if location.cashback_day != today {
             location.cashback_day = today;

@@ -2,7 +2,7 @@
 
 Goal: one transparent, queryable history of everything that happens to programs and cards, and instant updates on screens without polling (D-036).
 
-- **EVT-001** Every NEP-297 event emitted by `fairly` MUST be stored in the Supabase table `events` with: `id`, `tx_hash`, `block_height`, `log_index`, `event`, `program_slug`, `token_id`, `account_id`, `data` (JSON), `created_at`. `(tx_hash, log_index)` MUST be unique so ingestion is idempotent.
+- **EVT-001** Every NEP-297 event emitted by `fairly` MUST be stored in the Supabase table `events` with: `id`, `tx_hash`, `block_height`, `log_index`, `event`, `program_slug`, `token_id`, `account_id`, `signer_id` (the account that signed the transaction, used for per-device history), `data` (JSON), `created_at`. `(tx_hash, log_index)` MUST be unique so ingestion is idempotent.
 - **EVT-002** Every transaction submitted or relayed by the API MUST have its `EVENT_JSON` logs parsed from the execution outcome and inserted into `events` before the API responds.
 - **EVT-003** Events MUST be readable by anyone (they are public on-chain data) and writable only by the server (service role).
 - **EVT-004** The `events` table MUST be published to Supabase Realtime. Customer, cashier and merchant screens MUST subscribe to the rows of their card or program and refresh from the contract when an event arrives. Interval polling of the contract MUST NOT be used.

@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import TeamJoin from '../../../components/merchant/TeamJoin.vue';
+import { getProgram } from '../../../lib/near';
+
+const slug = Astro.params.slug;
+const program = slug ? await getProgram(slug).catch(() => null) : null;
+if (!program) {
+  return Astro.redirect('/404');
+}
+---
+
+<BaseLayout title={`Join ${program.name}`} description="Join the team as a manager." surface="backoffice">
+  <TeamJoin client:only="vue" program={program} />
+</BaseLayout>

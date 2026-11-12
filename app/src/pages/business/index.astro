@@ -1,0 +1,9 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BusinessStart from '../../components/merchant/BusinessStart.vue';
+import { demoProgramSlug } from '../../lib/server/signers';
+---
+
+<BaseLayout title="Business" description="Set up a loyalty program with real money inside." surface="backoffice">
+  <BusinessStart client:only="vue" demoSlug={demoProgramSlug} startWizard={false} />
+</BaseLayout>

@@ -26,6 +26,13 @@ pub fn validate_color(color: &str) {
     require!(valid, INVALID_COLOR);
 }
 
+pub fn validate_utc_offset(minutes: i16) {
+    require!(
+        (MIN_UTC_OFFSET_MINUTES..=MAX_UTC_OFFSET_MINUTES).contains(&minutes) && minutes % 15 == 0,
+        INVALID_TIMEZONE
+    );
+}
+
 pub fn validate_cashback_bps(bps: u16) {
     require!((1..=MAX_BPS).contains(&bps), INVALID_BPS);
 }

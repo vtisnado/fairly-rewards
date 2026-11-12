@@ -18,6 +18,9 @@
 - **PROG-012** The hackathon build MUST fund pools only with tUSDC from a NEAR testnet wallet. Card payments (fiat on-ramp) and stablecoins from other chains (NEAR Intents) are documented as production paths and shown as such in the UI.
 - **PROG-013** Anyone MAY top up a program's storage balance with `deposit_storage(slug)`. When it is too low, cashier calls fail with `NO_STORAGE`.
 - **PROG-014** A program MUST store its category as an ISO 18245 merchant category code `mcc` (4 digits, e.g. 5814 fast food and cafés, 5812 restaurants, 5462 bakeries, 5411 grocery, 7230 barbers). UIs show it as a label and icon, never inside the card code.
+- **PROG-015** A business account MUST own at most one program. `create_program` from an account that already owns one fails with `ALREADY_HAS_PROGRAM`. The setup flow is how a business registers; afterwards it only edits its program.
+- **PROG-016** A program MUST store its time zone as `utc_offset_minutes` (-720 to 840, multiple of 15). The daily cashback limit resets and weekly boosts start at local midnight. The owner can change it with `update_program`. Date-range boosts are stored as absolute times computed by the app from local dates.
+- **PROG-017** Roles: the owner can do everything. A manager (`add_manager`/`remove_manager`, owner only, optionally limited to one location) can add, pause and reactivate counter devices at their location and nothing else. A counter device can only issue passes and record purchases at its location. Each role holds its own key; the owner key never leaves the owner's browser.
 - **PROG-010** `get_program(slug)` and `get_programs_by_owner(account)` MUST be public views.
 
 ## Acceptance

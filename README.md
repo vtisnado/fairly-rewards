@@ -19,6 +19,11 @@ Every loyalty card is an NFT on NEAR that holds its own balance:
 - **Sponsored accounts:** customers get a card without installing a wallet or paying gas.
 - **Testnet only:** "tUSDC" is a test stablecoin for this demo.
 
+## Data and keys
+- **Keys stay on the device.** Customers, businesses, managers and counter devices each get their own NEAR key, created in their browser and kept in local storage. The server never receives a private key. A device or manager is connected by typing a short code that only carries its public account id.
+- **Email for account recovery.** Customers and businesses can link an email with NEAR Auth so they can get back into their account on a new device. The email is handled by the NEAR Auth login (Auth0) and is used only to recover access. Fairly does not show it on cards, in the dashboard or on chain.
+- **What Fairly stores off chain.** Supabase keeps a copy of public contract events (for live screens and history), used balance codes, and short-lived pairing codes. All of it is testnet data.
+
 ## Try it
 _To be completed (hosted demo link + "do X → see Y" steps)._
 

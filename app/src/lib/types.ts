@@ -16,6 +16,11 @@ export interface Location {
   cashback_today: U128;
 }
 
+export interface Manager {
+  account_id: string;
+  location_id: string | null;
+}
+
 export interface Cashier {
   account_id: string;
   location_id: string;
@@ -37,6 +42,7 @@ export interface ProgramView {
   slug: string;
   owner: string;
   name: string;
+  mcc: number;
   brand_color: string;
   logo_url: string | null;
   cashback_bps: number;
@@ -47,6 +53,8 @@ export interface ProgramView {
   tiers: Tier[];
   locations: Location[];
   cashiers: Cashier[];
+  managers: Manager[];
+  utc_offset_minutes: number;
   boosts: Boost[];
   pool_balance: U128;
   pending_total: U128;

@@ -15,12 +15,13 @@ call() {
 }
 
 program=$(cat <<JSON
-{"input":{"slug":"${slug}","name":"Corner Café","mcc":5814,"brand_color":"#F2654F","logo_url":null,
+{"input":{"slug":"${slug}","name":"Corner Café","mcc":5814,"utc_offset_minutes":60,"brand_color":"#F2654F","logo_url":null,
 "cashback_bps":500,"royalty_bps":500,"expiry_days":90,"daily_cap":"100000000",
 "tiers":[{"name":"Bronze","min_purchases":0,"perk":"Free cookie"},
 {"name":"Silver","min_purchases":3,"perk":"Size upgrade"},
 {"name":"Gold","min_purchases":6,"perk":"Free drink monthly"}],
-"locations":[{"id":"downtown","name":"Downtown","address":"12 Market St","lat":40.4168,"lng":-3.7038}]}}
+"locations":[{"id":"downtown","name":"Downtown","address":"Puerta del Sol 1, Madrid","lat":40.4169,"lng":-3.7035},
+{"id":"uptown","name":"Uptown","address":"Calle de Fuencarral 120, Madrid","lat":40.4318,"lng":-3.7024}]}}
 JSON
 )
 

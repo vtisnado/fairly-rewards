@@ -76,6 +76,7 @@ fn program_input() -> ProgramInput {
         slug: SLUG.into(),
         name: "Cafe Esquina".into(),
         mcc: 5814,
+        utc_offset_minutes: 0,
         brand_color: "#F2654F".into(),
         logo_url: None,
         cashback_bps: 500,
@@ -813,4 +814,120 @@ fn test_nep_181_enumeration() {
     assert_eq!(contract.nft_total_supply().0, 2);
     assert_eq!(contract.nft_tokens(None, None).len(), 2);
     assert_eq!(contract.nft_supply_for_owner(maria()).0, 1);
+}
+
+#[test]
+#[should_panic(expected = "ALREADY_HAS_PROGRAM")]
+fn test_prog_015_one_program_per_owner() {
+    let mut contract = setup();
+    call_as(&merchant(), NearToken::from_near(1), START_NS);
+    contract.create_program(ProgramInput {
+        slug: "second-shop".into(),
+        ..program_input()
+    });
+}
+
+#[test]
+#[should_panic(expected = "INVALID_TIMEZONE")]
+fn test_prog_016_invalid_timezone() {
+    call_as(&merchant(), NearToken::from_near(1), START_NS);
+    let mut contract = Fairly::new(tusdc(), "https://fairly.example".into());
+    contract.create_program(ProgramInput {
+        utc_offset_minutes: 7,
+        ..program_input()
+    });
+}
+
+#[test]
+fn test_prog_016_weekly_boost_uses_local_day() {
+    let mut contract = setup();
+    as_user(&merchant());
+    contract.update_program(
+        SLUG.into(),
+        ProgramUpdate {
+            utc_offset_minutes: Some(-720),
+            ..Default::default()
+        },
+    );
+    let local_weekday = crate::programs::weekday_of(START_NS - 12 * 3_600 * 1_000_000_000);
+    let id = contract.add_boost(
+        SLUG.into(),
+        BoostInput {
+            name: "Local day".into(),
+            extra_bps: 300,
+            schedule: BoostSchedule::Weekly {
+                weekday: local_weekday,
+            },
+        },
+    );
+    assert_eq!(
+        contract.get_program(SLUG.into()).unwrap().active_boost_ids,
+        vec![id]
+    );
+}
+
+fn with_uptown(contract: &mut Fairly) {
+    as_user(&merchant());
+    contract.add_location(
+        SLUG.into(),
+        LocationInput {
+            id: "uptown".into(),
+            name: "Uptown".into(),
+            address: "High St 2".into(),
+            lat: 40.5,
+            lng: -3.6,
+        },
+    );
+    contract.add_manager(SLUG.into(), juan(), Some("uptown".into()));
+}
+
+#[test]
+fn test_role_001_manager_adds_and_removes_cashier_at_own_location() {
+    let mut contract = setup();
+    with_uptown(&mut contract);
+    as_user(&juan());
+    contract.add_cashier(SLUG.into(), maria(), "uptown".into());
+    assert_eq!(
+        contract
+            .get_program(SLUG.into())
+            .unwrap()
+            .program
+            .cashier_location(&maria()),
+        Some("uptown")
+    );
+    contract.remove_cashier(SLUG.into(), maria());
+    assert!(contract
+        .get_program(SLUG.into())
+        .unwrap()
+        .program
+        .cashier_location(&maria())
+        .is_none());
+}
+
+#[test]
+#[should_panic(expected = "NOT_MANAGER")]
+fn test_role_002_manager_cannot_touch_other_location() {
+    let mut contract = setup();
+    with_uptown(&mut contract);
+    as_user(&juan());
+    contract.remove_cashier(SLUG.into(), cashier());
+}
+
+#[test]
+#[should_panic(expected = "NOT_OWNER")]
+fn test_role_003_manager_cannot_withdraw() {
+    let mut contract = setup();
+    fund(&mut contract, 10 * ONE_TUSDC);
+    with_uptown(&mut contract);
+    as_user_with_yocto(&juan());
+    contract.withdraw_pool(SLUG.into(), U128(ONE_TUSDC));
+}
+
+#[test]
+#[should_panic(expected = "NOT_OWNER")]
+fn test_role_004_only_owner_adds_managers() {
+    let mut contract = setup();
+    with_uptown(&mut contract);
+    as_user(&juan());
+    contract.add_manager(SLUG.into(), maria(), None);
 }

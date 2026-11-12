@@ -7,6 +7,9 @@ pub const MAX_BOOST_BPS: u16 = 1_500;
 pub const MAX_BOOSTS: usize = 10;
 pub const MAX_CASHIERS: usize = 20;
 pub const MAX_LOCATIONS: usize = 20;
+pub const MAX_MANAGERS: usize = 10;
+pub const MIN_UTC_OFFSET_MINUTES: i16 = -720;
+pub const MAX_UTC_OFFSET_MINUTES: i16 = 840;
 pub const MAX_TIERS: usize = 5;
 pub const MAX_PURCHASE_CENTS: u64 = 100_000;
 pub const MAX_EXPIRY_DAYS: u32 = 365;
@@ -52,6 +55,13 @@ pub struct Cashier {
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Debug, PartialEq)]
+pub struct Manager {
+    pub account_id: AccountId,
+    pub location_id: Option<String>,
+}
+
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Debug, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum BoostSchedule {
     Range { starts_ns: u64, ends_ns: u64 },
@@ -93,8 +103,10 @@ pub struct Program {
     pub tiers: Vec<Tier>,
     pub locations: Vec<Location>,
     pub cashiers: Vec<Cashier>,
+    pub managers: Vec<Manager>,
     pub boosts: Vec<Boost>,
     pub next_boost_id: u32,
+    pub utc_offset_minutes: i16,
     pub pool_balance: U128,
     pub pending_total: U128,
     pub total_cashback: U128,
@@ -110,6 +122,7 @@ pub struct ProgramInput {
     pub slug: String,
     pub name: String,
     pub mcc: u16,
+    pub utc_offset_minutes: i16,
     pub brand_color: String,
     pub logo_url: Option<String>,
     pub cashback_bps: u16,
@@ -128,6 +141,7 @@ pub struct ProgramUpdate {
     pub logo_url: Option<String>,
     pub cashback_bps: Option<u16>,
     pub perks: Option<Vec<Option<String>>>,
+    pub utc_offset_minutes: Option<i16>,
 }
 
 #[near(serializers = [borsh, json])]

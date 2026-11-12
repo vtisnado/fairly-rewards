@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+
+: "${PUBLIC_FAIRLY_CONTRACT:?missing in .env}"
+: "${SPONSOR_ACCOUNT_ID:?missing in .env}"
+network="${NEAR_NETWORK:-testnet}"
+[ "${network}" = "testnet" ] || { echo "reset-testnet only runs on testnet" >&2; exit 1; }
+root="$(cd "$(dirname "$0")/.." && pwd)"
+
+near account delete-account "${PUBLIC_FAIRLY_CONTRACT}" beneficiary "${SPONSOR_ACCOUNT_ID}" \
+  network-config "${network}" sign-with-legacy-keychain send
+rm -f "${HOME}/.near-credentials/${network}/${PUBLIC_FAIRLY_CONTRACT}.json"
+rm -rf "${HOME}/.near-credentials/${network}/${PUBLIC_FAIRLY_CONTRACT}"
+near account create-account fund-myself "${PUBLIC_FAIRLY_CONTRACT}" '10 NEAR' \
+  autogenerate-new-keypair save-to-legacy-keychain sign-as "${SPONSOR_ACCOUNT_ID}" \
+  network-config "${network}" sign-with-legacy-keychain send
+
+"${root}/scripts/deploy"
+"${root}/scripts/seed"

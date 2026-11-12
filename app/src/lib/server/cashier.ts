@@ -55,7 +55,7 @@ export function toContractCode(slug: string, displayCode: string): string | null
   return match ? `${slug}:${match[1]}${match[2]}#${match[3]}` : null;
 }
 
-export async function honorCode(slug: string, displayCode: string): Promise<HonoredCode> {
+export async function honorCode(slug: string, displayCode: string, honoredBy = demoCashierAccount().accountId): Promise<HonoredCode> {
   const code = toContractCode(slug, displayCode);
   if (!code) {
     throw new Error('INVALID_CODE');
@@ -75,7 +75,7 @@ export async function honorCode(slug: string, displayCode: string): Promise<Hono
     token_id: redemption.token_id,
   };
   await insertRows('honored_codes', [
-    { ...honored, program_slug: slug, honored_by: demoCashierAccount().accountId },
+    { ...honored, program_slug: slug, honored_by: honoredBy },
   ]);
   return honored;
 }

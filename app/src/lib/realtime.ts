@@ -9,6 +9,7 @@ export interface FairlyEvent {
   program_slug: string | null;
   token_id: string | null;
   account_id: string | null;
+  signer_id: string | null;
   data: Record<string, unknown>;
   created_at: string;
 }
@@ -83,4 +84,14 @@ export async function honoredCodes(slug: string, codes: string[]): Promise<Set<s
   if (codes.length === 0) return new Set();
   const { data } = await supabase.from('honored_codes').select('code').eq('program_slug', slug).in('code', codes);
   return new Set((data ?? []).map((row) => row.code as string));
+}
+
+export async function programEvents(slug: string): Promise<FairlyEvent[]> {
+  const { data } = await supabase
+    .from('events')
+    .select('*')
+    .eq('program_slug', slug)
+    .order('created_at', { ascending: true })
+    .limit(5000);
+  return (data ?? []) as FairlyEvent[];
 }
