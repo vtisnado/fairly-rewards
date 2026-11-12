@@ -38,6 +38,7 @@ const TUSDC_METHODS: Record<string, bigint> = {
 };
 
 interface DecodedAction {
+  addKey?: { accessKey: { permission: { fullAccess?: unknown } } };
   functionCall?: { methodName: string; gas: bigint; deposit: bigint };
   transfer?: { deposit: bigint };
 }
@@ -50,9 +51,10 @@ function allowedCall(methods: Record<string, bigint>, action: DecodedAction): bo
 }
 
 export function isAllowedDelegate(delegate: SignedDelegate): boolean {
-  const { receiverId, actions } = delegate.delegateAction;
+  const { receiverId, senderId, actions } = delegate.delegateAction;
   const decoded = actions as unknown as DecodedAction[];
   if (decoded.length === 0) return false;
+  if (receiverId === senderId) return decoded.length === 1 && !!decoded[0]!.addKey?.accessKey.permission.fullAccess;
   if (receiverId === fairlyContract) return decoded.every((action) => allowedCall(FAIRLY_METHODS, action));
   if (receiverId === tusdcContract) return decoded.every((action) => allowedCall(TUSDC_METHODS, action));
   if (IMPLICIT_ACCOUNT.test(receiverId)) {

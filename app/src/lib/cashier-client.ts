@@ -18,7 +18,7 @@ export interface CashierClient {
   honor(code: string): Promise<HonorResult>;
 }
 
-export const pairedDevice = (slug: string): BrowserWallet | null => loadWallet(storageKey(slug));
+export const pairedDevice = (slug: string): Promise<BrowserWallet | null> => loadWallet(storageKey(slug));
 
 export const forgetDevice = (slug: string) => localStorage.removeItem(storageKey(slug));
 
@@ -48,9 +48,9 @@ export function deviceCashier(slug: string, device: BrowserWallet): CashierClien
     issue: (owner) => call<string>('issue_pass', { slug, owner }),
     purchase: (tokenId, amountCents, locationId, category) =>
       call<PurchaseResult>('record_purchase', { token_id: tokenId, amount_cents: amountCents, location_id: locationId, category }),
-    honor: (code) => {
+    honor: async (code) => {
       const signedAt = Date.now();
-      const proof = signMessage(device, `fairly-honor:${slug}:${code}:${signedAt}`);
+      const proof = await signMessage(device, `fairly-honor:${slug}:${code}:${signedAt}`);
       return post<HonorResult>('/api/cashier/honor', { slug, code, accountId: device.accountId, signedAt, ...proof });
     },
   };

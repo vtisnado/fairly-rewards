@@ -1,11 +1,10 @@
-import { loadWallet, newWallet, saveWallet, type BrowserWallet } from './browser-wallet';
+import { loadOrCreateWallet, type BrowserWallet } from './browser-wallet';
 
 export type PairingKind = 'device' | 'manager';
 
 export const pairingStorageKey = (kind: PairingKind, slug: string) => `fairly.${kind}.${slug}`;
 
-export const localKey = (kind: PairingKind, slug: string): BrowserWallet =>
-  loadWallet(pairingStorageKey(kind, slug)) ?? saveWallet(pairingStorageKey(kind, slug), newWallet());
+export const localKey = (kind: PairingKind, slug: string): Promise<BrowserWallet> => loadOrCreateWallet(pairingStorageKey(kind, slug));
 
 export async function requestPairing(slug: string, kind: PairingKind, accountId: string): Promise<string> {
   const response = await fetch('/api/pairing', {

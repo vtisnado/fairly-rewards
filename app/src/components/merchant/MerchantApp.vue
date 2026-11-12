@@ -14,11 +14,13 @@ import SalesChart from './SalesChart.vue';
 import SetupWizard from './SetupWizard.vue';
 import { getPass, getProgram } from '../../lib/near';
 import { slugify } from '../../lib/business-types';
+import { backupText } from '../../lib/browser-wallet';
 import { cardCodeOf, dollarsToBaseUnits, formatMoney, formatPercent, readableTextColor } from '../../lib/format';
 import {
   actionError,
   demoActions,
   loadMerchant,
+  merchantBackupKey,
   loadManager,
   managerActions,
   ownerActions,
@@ -462,11 +464,18 @@ function exportCsv() {
   URL.revokeObjectURL(link.href);
 }
 
-function downloadKey() {
-  const wallet = loadMerchant();
+async function downloadKey() {
+  const wallet = await loadMerchant();
   if (!wallet) return;
+  let recovery: string;
+  try {
+    recovery = await merchantBackupKey(wallet);
+  } catch (cause) {
+    showNotice(actionError(cause));
+    return;
+  }
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(new Blob([`${wallet.secretKey}\n`], { type: 'text/plain' }));
+  link.href = URL.createObjectURL(new Blob([backupText('Fairly business key', wallet.accountId, recovery)], { type: 'text/plain' }));
   link.download = `fairly-business-key-${program.value.slug}.txt`;
   link.click();
   URL.revokeObjectURL(link.href);
@@ -565,9 +574,9 @@ function printJoin() {
 
 onMounted(async () => {
   collapsed.value = localStorage.getItem(SIDEBAR_KEY) === 'collapsed';
-  const owner = loadMerchant();
+  const owner = await loadMerchant();
   isOwner.value = owner?.accountId === program.value.owner;
-  const manager = loadManager(program.value.slug);
+  const manager = await loadManager(program.value.slug);
   managerAccount.value = manager?.accountId ?? null;
   if (isOwner.value && owner) actions.value = ownerActions(owner, program.value.slug);
   else if (manager && program.value.managers.some((entry) => entry.account_id === manager.accountId)) actions.value = managerActions(manager, program.value.slug);

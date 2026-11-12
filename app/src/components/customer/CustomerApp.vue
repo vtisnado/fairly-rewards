@@ -15,10 +15,13 @@ import {
   claimPerk,
   createWallet,
   listPass,
+  backupKey,
   loadWallet,
   redeem,
+  restoreWallet,
   type CustomerWallet,
 } from '../../lib/customer-wallet';
+import { backupText } from '../../lib/browser-wallet';
 
 type Screen = 'loading' | 'join' | 'intro' | 'waiting' | 'home' | 'code' | 'sold';
 type Sheet = 'use' | 'code' | 'sell' | 'listed' | 'levels' | 'help' | null;
@@ -179,7 +182,7 @@ async function join() {
   busy.value = true;
   error.value = '';
   try {
-    wallet.value = loadWallet() ?? createWallet();
+    wallet.value = (await loadWallet()) ?? (await createWallet());
     const response = await fetch('/api/join', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -274,11 +277,24 @@ async function simulatePurchase() {
   }
 }
 
-function downloadBackup() {
+async function restoreFromFile(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  try {
+    wallet.value = await restoreWallet(await file.text());
+    await refresh();
+    screen.value = pass.value ? 'home' : 'waiting';
+    listen();
+  } catch {
+    error.value = 'That file is not a Fairly backup.';
+  }
+}
+
+async function downloadBackup() {
   if (!wallet.value) return;
-  const blob = new Blob([`Fairly card backup\nAccount: ${wallet.value.accountId}\nKey: ${wallet.value.secretKey}\n`], {
-    type: 'text/plain',
-  });
+  const recovery = await run(() => backupKey(wallet.value!));
+  if (!recovery) return;
+  const blob = new Blob([backupText('Fairly card backup', wallet.value.accountId, recovery)], { type: 'text/plain' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = `fairly-${props.program.slug}-backup.txt`;
@@ -292,7 +308,7 @@ watch(sheet, (value) => {
 });
 
 onMounted(async () => {
-  wallet.value = loadWallet();
+  wallet.value = await loadWallet();
   if (!wallet.value) {
     screen.value = 'join';
     return;
@@ -341,6 +357,10 @@ onBeforeUnmount(stopListening);
         <span class="grid size-12 place-items-center rounded-full bg-sun text-ink"><AppIcon name="arrow" class="size-6" /></span>
       </button>
       <p class="relative mt-3 text-center text-sm text-cream/60">No app. No sign-up. <span class="font-mono text-xs opacity-70">(demo · test money)</span></p>
+      <label class="relative mt-2 cursor-pointer text-center text-sm font-semibold text-cream/70 underline underline-offset-4">
+        I have a backup file
+        <input type="file" accept=".txt,text/plain" class="hidden" @change="restoreFromFile" />
+      </label>
     </section>
 
     <section v-else-if="screen === 'intro'" class="relative flex h-[calc(100dvh-1.75rem)] flex-col pt-12 pb-8 transition-colors duration-500" :class="SLIDES[slide].background">

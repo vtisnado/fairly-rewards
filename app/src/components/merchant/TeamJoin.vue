@@ -10,27 +10,28 @@ const props = defineProps<{ program: ProgramView }>();
 const code = ref('');
 const error = ref('');
 let unsubscribe = () => {};
-const wallet = localKey('manager', props.program.slug);
+let accountId = '';
 const dashboard = `/business/${props.program.slug}`;
 
-const isManager = (program: ProgramView | null) => !!program?.managers.some((manager) => manager.account_id === wallet.accountId);
+const isManager = (program: ProgramView | null) => !!program?.managers.some((manager) => manager.account_id === accountId);
 
 async function newCode() {
   error.value = '';
   try {
-    code.value = await requestPairing(props.program.slug, 'manager', wallet.accountId);
+    code.value = await requestPairing(props.program.slug, 'manager', accountId);
   } catch {
     error.value = 'Could not get a code. Check the connection and try again.';
   }
 }
 
 async function onEvent(event: FairlyEvent) {
-  if (event.event === 'manager_added' && event.data.account_id === wallet.accountId && isManager(await getProgram(props.program.slug))) {
+  if (event.event === 'manager_added' && event.data.account_id === accountId && isManager(await getProgram(props.program.slug))) {
     window.location.href = dashboard;
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  accountId = (await localKey('manager', props.program.slug)).accountId;
   if (isManager(props.program)) {
     window.location.replace(dashboard);
     return;

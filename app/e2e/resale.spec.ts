@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { DEMO_SLUG, cardCode, desktop, joinAsCustomer, phone } from './helpers';
+import { DEMO_SLUG, cardCode, cardNumberOn, desktop, joinAsCustomer, phone } from './helpers';
 
 const formatted = (tokenId: string) => `${cardCode(tokenId).slice(0, 3)}-${cardCode(tokenId).slice(3)}`;
 
@@ -27,13 +27,7 @@ test('a customer sells a card on the market, the buyer gets the balance and the 
   await expect(buyer.getByText('It is yours')).toBeVisible({ timeout: 180_000 });
   await buyer.getByRole('link', { name: 'Open my card' }).click();
   await expect(buyer.getByText('Use balance')).toBeVisible({ timeout: 90_000 });
-  const buyerToken = await buyer.evaluate(async (slug) => {
-    const wallet = await import('/src/lib/customer-wallet.ts');
-    const near = await import('/src/lib/near.ts');
-    const passes = await near.getPassesByOwner(wallet.loadWallet()!.accountId);
-    return passes.find((pass: { program_slug: string }) => pass.program_slug === slug)?.token_id;
-  }, DEMO_SLUG);
-  expect(buyerToken).toBe(tokenId);
+  expect(await cardNumberOn(buyer)).toBe(formatted(tokenId));
 
   await expect(seller.getByText('Your card was sold')).toBeVisible({ timeout: 60_000 });
 

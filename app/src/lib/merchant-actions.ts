@@ -1,5 +1,5 @@
 import { actions, nearToYocto } from 'near-api-js';
-import { loadWallet, newWallet, relay, saveWallet, type BrowserWallet } from './browser-wallet';
+import { createRecoveryKey, importWallet, loadOrCreateWallet, loadWallet, relay, type BrowserWallet } from './browser-wallet';
 import { pairingStorageKey } from './pairing';
 import { dollarsToBaseUnits } from './format';
 import { fairlyContract, provider, tusdcContract } from './near';
@@ -73,11 +73,13 @@ export interface MerchantActions {
 }
 
 export const loadMerchant = () => loadWallet(STORAGE_KEY);
+export const restoreMerchant = (secretKey: string) => importWallet(STORAGE_KEY, secretKey);
+export const merchantBackupKey = (wallet: BrowserWallet) => createRecoveryKey(wallet);
 
 export const loadManager = (slug: string) => loadWallet(pairingStorageKey('manager', slug));
 
 export async function ensureMerchant(): Promise<BrowserWallet> {
-  const wallet = loadMerchant() ?? saveWallet(STORAGE_KEY, newWallet());
+  const wallet = await loadOrCreateWallet(STORAGE_KEY);
   const response = await fetch('/api/merchant/account', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

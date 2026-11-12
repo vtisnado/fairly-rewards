@@ -77,4 +77,12 @@ Browser tests run in the official Playwright image against the dev server and te
 docker compose run --rm e2e test
 ```
 
+To test the production build (where the content security policy applies), build it and serve it with Wrangler on another port, then point the tests at it:
+
+```sh
+docker compose run --rm dev pnpm -C app build
+docker run --rm --network host -v "$PWD":/workspace -w /workspace/app fairly-dev pnpm exec wrangler dev --ip 0.0.0.0 --port 8790 --env-file ../.env
+docker compose run --rm -e E2E_BASE_URL=http://localhost:8790 e2e test
+```
+
 Reports land in `app/e2e-report/`. The tests create real testnet accounts paid by the sponsor, so run them with a funded sponsor account.

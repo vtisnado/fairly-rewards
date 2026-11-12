@@ -116,7 +116,7 @@ async function buy() {
 }
 
 async function unlist() {
-  const wallet = loadWallet();
+  const wallet = await loadWallet();
   if (!wallet || !picked.value) return;
   busy.value = true;
   try {
@@ -131,7 +131,7 @@ async function unlist() {
 }
 
 onMounted(async () => {
-  accountId.value = loadWallet()?.accountId ?? null;
+  accountId.value = (await loadWallet())?.accountId ?? null;
   await Promise.all([load(), loadOwned()]);
   for (const event of ['listed', 'listing_cancelled', 'sale']) {
     unsubscribers.push(

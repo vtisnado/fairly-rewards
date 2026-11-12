@@ -1,5 +1,5 @@
 import { actions } from 'near-api-js';
-import { loadWallet as loadStored, newWallet, relay, saveWallet, walletFromSecret, type BrowserWallet } from './browser-wallet';
+import { createRecoveryKey, createWallet as createStored, importWallet, loadWallet as loadStored, relay, type BrowserWallet } from './browser-wallet';
 import { dollarsToBaseUnits } from './format';
 import { fairlyContract, getPass, tusdcContract } from './near';
 
@@ -10,8 +10,9 @@ const CALL_GAS = 50_000_000_000_000n;
 export type CustomerWallet = BrowserWallet;
 
 export const loadWallet = () => loadStored(STORAGE_KEY);
-export const createWallet = () => saveWallet(STORAGE_KEY, newWallet());
-export const restoreWallet = (secretKey: string) => saveWallet(STORAGE_KEY, walletFromSecret(secretKey));
+export const createWallet = () => createStored(STORAGE_KEY);
+export const restoreWallet = (secretKey: string) => importWallet(STORAGE_KEY, secretKey);
+export const backupKey = (wallet: CustomerWallet) => createRecoveryKey(wallet);
 
 const callFairly = <T>(wallet: CustomerWallet, methodName: string, args: Record<string, unknown>, deposit = 0n) =>
   relay<T>(wallet, fairlyContract, [actions.functionCall(methodName, args, CALL_GAS, deposit)]);
@@ -31,7 +32,7 @@ export const cancelListing = (wallet: CustomerWallet, tokenId: string) =>
 const TRANSFER_GAS = 100_000_000_000_000n;
 
 export async function ensureCustomer(): Promise<CustomerWallet> {
-  const wallet = loadWallet() ?? createWallet();
+  const wallet = (await loadWallet()) ?? (await createWallet());
   const response = await fetch('/api/account', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

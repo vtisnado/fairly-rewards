@@ -2,6 +2,19 @@ import { defineConfig, envField } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
 import vue from '@astrojs/vue';
 import tailwindcss from '@tailwindcss/vite';
+import { existsSync } from 'node:fs';
+
+if (existsSync('../.env')) process.loadEnvFile('../.env');
+const env = process.env;
+const supabaseOrigin = new URL(env.PUBLIC_SUPABASE_URL ?? 'http://localhost:54321').origin;
+const rpcOrigin = new URL(env.PUBLIC_NEAR_RPC_URL ?? 'https://test.rpc.fastnear.com').origin;
+const connectSources = [
+  "'self'",
+  rpcOrigin,
+  supabaseOrigin,
+  supabaseOrigin.replace(/^http/, 'ws'),
+  'https://nominatim.openstreetmap.org',
+];
 
 const secret = () => envField.string({ context: 'server', access: 'secret' });
 
@@ -10,6 +23,24 @@ export default defineConfig({
   adapter: cloudflare({ imageService: 'passthrough' }),
   integrations: [vue()],
   devToolbar: { enabled: false },
+  security: {
+    csp: {
+      directives: [
+        "default-src 'self'",
+        `connect-src ${connectSources.join(' ')}`,
+        "img-src 'self' data: blob: https://tile.openstreetmap.org",
+        "font-src 'self' https://fonts.gstatic.com",
+        "media-src 'self' blob:",
+        "worker-src 'self' blob:",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ],
+      styleDirective: {
+        resources: ["'self'", 'https://fonts.googleapis.com', { resource: "'unsafe-inline'", kind: 'attribute' }],
+      },
+    },
+  },
   env: {
     schema: {
       SPONSOR_ACCOUNT_ID: secret(),

@@ -22,13 +22,14 @@ export async function joinAsCustomer(page: Page, slug = DEMO_SLUG): Promise<stri
   await page.getByRole('button', { name: /Get my card/ }).click();
   await page.getByRole('button', { name: 'Skip' }).click({ timeout: 90_000 });
   await expect(page.getByText('Use balance')).toBeVisible({ timeout: 90_000 });
-  return page.evaluate(async (programSlug) => {
-    const wallet = await import('/src/lib/customer-wallet.ts');
-    const near = await import('/src/lib/near.ts');
-    const account = wallet.loadWallet();
-    const passes = await near.getPassesByOwner(account!.accountId);
-    return passes.find((pass: { program_slug: string }) => pass.program_slug === programSlug)!.token_id as string;
-  }, slug);
+  return `${slug}:${(await cardNumberOn(page)).replace('-', '')}`;
+}
+
+export async function cardNumberOn(page: Page): Promise<string> {
+  await page.getByRole('button', { name: 'Show code' }).click();
+  const label = await page.getByText(/· No\. [0-9A-Z]{3}-[0-9A-Z]{3}$/).innerText();
+  await page.getByRole('button', { name: 'Back' }).click();
+  return label.split('No. ')[1]!.trim();
 }
 
 export const cardCode = (tokenId: string) => tokenId.split(':')[1]!;

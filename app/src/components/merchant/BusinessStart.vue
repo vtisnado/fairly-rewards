@@ -2,13 +2,12 @@
 import { onMounted, ref } from 'vue';
 import AppIcon from '../ui/AppIcon.vue';
 import SetupWizard from './SetupWizard.vue';
-import { saveWallet, walletFromSecret } from '../../lib/browser-wallet';
-import { loadMerchant } from '../../lib/merchant-actions';
+import { parseBackup } from '../../lib/browser-wallet';
+import { loadMerchant, restoreMerchant } from '../../lib/merchant-actions';
 import { viewFairly } from '../../lib/near';
 import type { ProgramView } from '../../lib/types';
 
 const props = defineProps<{ demoSlug: string; startWizard: boolean }>();
-const MERCHANT_KEY = 'fairly.merchant.key';
 
 const programs = ref<ProgramView[]>([]);
 const checking = ref(true);
@@ -21,13 +20,13 @@ const programsOf = (accountId: string) => viewFairly<ProgramView[]>('get_program
 async function restore() {
   restoreError.value = '';
   try {
-    const wallet = walletFromSecret(restoreText.value);
-    const owned = await programsOf(wallet.accountId);
+    const { accountId } = parseBackup(restoreText.value);
+    const owned = await programsOf(accountId);
     if (!owned.length) {
       restoreError.value = 'That key does not own a program.';
       return;
     }
-    saveWallet(MERCHANT_KEY, wallet);
+    await restoreMerchant(restoreText.value);
     window.location.href = `/business/${owned[0]!.slug}`;
   } catch {
     restoreError.value = 'That does not look like a business key.';
@@ -44,7 +43,7 @@ async function readFile(event: Event) {
 }
 
 onMounted(async () => {
-  const wallet = loadMerchant();
+  const wallet = await loadMerchant();
   if (wallet) programs.value = await programsOf(wallet.accountId).catch(() => []);
   checking.value = false;
   if (programs.value.length) window.location.replace(`/business/${programs.value[0]!.slug}`);

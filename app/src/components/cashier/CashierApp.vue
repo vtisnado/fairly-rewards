@@ -250,8 +250,8 @@ async function onEvent(event: FairlyEvent) {
   }
 }
 
-onMounted(() => {
-  const device = pairedDevice(program.value.slug) ?? (props.isDemo ? null : localKey('device', program.value.slug));
+onMounted(async () => {
+  const device = (await pairedDevice(program.value.slug)) ?? (props.isDemo ? null : await localKey('device', program.value.slug));
   if (device) {
     deviceAccount.value = device.accountId;
     client.value = deviceCashier(program.value.slug, device);
