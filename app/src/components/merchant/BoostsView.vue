@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import AppIcon from '../ui/AppIcon.vue';
 import BoostForm from './BoostForm.vue';
+import { showToast } from '../../lib/toast';
 import { BOOST_PRESETS } from '../../lib/boost-presets';
 import { localDate } from '../../lib/timezone';
 import { formatPercent, readableTextColor } from '../../lib/format';
@@ -73,7 +74,7 @@ async function toggle(boost: Boost) {
     emit('notice', `${boost.name} ${boost.enabled ? 'paused' : 'turned on'}`);
     emit('changed');
   } catch (cause) {
-    emit('notice', actionError(cause));
+    showToast('error', 'Could not update the boost', actionError(cause));
   } finally {
     busyId.value = null;
   }
@@ -86,7 +87,7 @@ async function remove(boost: Boost) {
     emit('notice', `${boost.name} removed`);
     emit('changed');
   } catch (cause) {
-    emit('notice', actionError(cause));
+    showToast('error', 'Could not update the boost', actionError(cause));
   } finally {
     busyId.value = null;
   }

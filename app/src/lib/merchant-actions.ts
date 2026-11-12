@@ -1,5 +1,5 @@
 import { actions, nearToYocto } from 'near-api-js';
-import { createRecoveryKey, importWallet, loadOrCreateWallet, loadWallet, relay, type BrowserWallet } from './browser-wallet';
+import { createRecoveryKey, importWallet, loadOrCreateWallet, loadWallet, relay, waitForAccount, type BrowserWallet } from './browser-wallet';
 import { pairingStorageKey } from './pairing';
 import { dollarsToBaseUnits } from './format';
 import { fairlyContract, provider, tusdcContract } from './near';
@@ -89,6 +89,7 @@ export async function ensureMerchant(): Promise<BrowserWallet> {
     const body = (await response.json().catch(() => ({}))) as { error?: string };
     throw new Error(body.error ?? 'ACCOUNT_FAILED');
   }
+  await waitForAccount(wallet);
   return wallet;
 }
 

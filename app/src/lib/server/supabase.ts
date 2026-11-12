@@ -25,3 +25,14 @@ export async function selectRows<T>(table: string, query: string): Promise<T[]> 
   }
   return (await response.json()) as T[];
 }
+
+export async function upsertRows(table: string, rows: unknown[], conflictTarget: string): Promise<void> {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${conflictTarget}`, {
+    method: 'POST',
+    headers: headers('resolution=merge-duplicates,return=minimal'),
+    body: JSON.stringify(rows),
+  });
+  if (!response.ok) {
+    throw new Error(`SUPABASE_${response.status}`);
+  }
+}

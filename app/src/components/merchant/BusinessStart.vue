@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import ToastStack from '../ui/ToastStack.vue';
 import { onMounted, ref } from 'vue';
 import AppIcon from '../ui/AppIcon.vue';
 import SetupWizard from './SetupWizard.vue';
 import { parseBackup } from '../../lib/browser-wallet';
 import { loadMerchant, restoreMerchant } from '../../lib/merchant-actions';
+import { nearAuthAvailable, nearAuthMessage, startRecovery, type PendingRecovery } from '../../lib/near-auth';
+import BusySpinner from '../ui/BusySpinner.vue';
 import { viewFairly } from '../../lib/near';
 import type { ProgramView } from '../../lib/types';
 
@@ -35,6 +38,37 @@ async function restore() {
 
 function openLaunched(slug: string) {
   window.location.href = `/business/${slug}?launched=1`;
+}
+
+const emailReady = nearAuthAvailable();
+const recovering = ref(false);
+const pending = ref<PendingRecovery | null>(null);
+
+async function recoverByEmail() {
+  if (recovering.value) return;
+  recovering.value = true;
+  restoreError.value = '';
+  try {
+    pending.value = await startRecovery('merchant', 'fairly.merchant.key');
+  } catch (cause) {
+    restoreError.value = nearAuthMessage(cause);
+  } finally {
+    recovering.value = false;
+  }
+}
+
+async function approveRecovery() {
+  if (!pending.value || recovering.value) return;
+  recovering.value = true;
+  restoreError.value = '';
+  try {
+    const wallet = await pending.value.approve();
+    const owned = await programsOf(wallet.accountId);
+    window.location.href = owned[0] ? `/business/${owned[0].slug}` : '/business';
+  } catch (cause) {
+    restoreError.value = nearAuthMessage(cause);
+    recovering.value = false;
+  }
 }
 
 async function readFile(event: Event) {
@@ -80,7 +114,18 @@ onMounted(async () => {
       </div>
 
       <details class="mt-8 rounded-xl border border-bo-line bg-white p-5">
-        <summary class="cursor-pointer font-semibold">Already registered? Restore your business key</summary>
+        <summary class="cursor-pointer font-semibold">Already registered? Get your business back</summary>
+        <div v-if="emailReady" class="mt-3">
+          <p v-if="pending" class="text-sm">Business found{{ pending.email ? ` for ${pending.email}` : '' }}. Approve adding this browser; NEAR Auth opens again to confirm.</p>
+          <button
+            type="button"
+            class="mt-2 flex h-10 items-center gap-2 rounded-lg bg-bo-text px-4 text-sm font-semibold text-white disabled:opacity-40"
+            :disabled="recovering"
+            @click="pending ? approveRecovery() : recoverByEmail()"
+          >
+            <BusySpinner v-if="recovering" />{{ recovering ? 'Waiting for NEAR Auth…' : pending ? 'Approve with NEAR Auth' : 'Recover with email' }}
+          </button>
+        </div>
         <p class="mt-2 text-sm text-bo-muted">Paste the key you downloaded from Settings, or pick the file.</p>
         <textarea v-model="restoreText" rows="2" class="mt-3 w-full rounded-lg border border-bo-line p-3 font-mono text-xs focus:border-bo-text focus:outline-none" placeholder="ed25519:…" aria-label="Business key" />
         <div class="mt-2 flex flex-wrap items-center gap-2">
@@ -92,5 +137,6 @@ onMounted(async () => {
         <p v-if="restoreError" class="mt-2 text-sm font-semibold text-red-600" role="alert">{{ restoreError }}</p>
       </details>
     </main>
+    <ToastStack />
   </div>
 </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ToastStack from '../ui/ToastStack.vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppIcon from '../ui/AppIcon.vue';
 import BottomSheet from '../ui/BottomSheet.vue';
@@ -22,9 +23,12 @@ import {
   type CustomerWallet,
 } from '../../lib/customer-wallet';
 import { backupText } from '../../lib/browser-wallet';
+import { linkEmail, nearAuthAvailable, nearAuthMessage, startRecovery, type PendingRecovery } from '../../lib/near-auth';
+import { showError, showToast } from '../../lib/toast';
+import BusySpinner from '../ui/BusySpinner.vue';
 
 type Screen = 'loading' | 'join' | 'intro' | 'waiting' | 'home' | 'code' | 'sold';
-type Sheet = 'use' | 'code' | 'sell' | 'listed' | 'levels' | 'help' | null;
+type Sheet = 'use' | 'code' | 'sell' | 'listed' | 'levels' | 'help' | 'protect' | 'recover' | null;
 
 const props = defineProps<{ program: ProgramView; isDemo: boolean }>();
 
@@ -48,7 +52,6 @@ const wallet = ref<CustomerWallet | null>(null);
 const pass = ref<PassView | null>(null);
 const activity = ref<ActivityEntry[]>([]);
 const busy = ref(false);
-const error = ref('');
 const bump = ref(false);
 const floats = ref<{ id: number; amount: number }[]>([]);
 const levelUp = ref(false);
@@ -180,7 +183,6 @@ function stopListening() {
 
 async function join() {
   busy.value = true;
-  error.value = '';
   try {
     wallet.value = (await loadWallet()) ?? (await createWallet());
     const response = await fetch('/api/join', {
@@ -195,27 +197,34 @@ async function join() {
     screen.value = 'intro';
     listen();
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'JOIN_FAILED';
+    showError('create your card', cause);
   } finally {
     busy.value = false;
   }
 }
 
+const PROTECT_DISMISSED_KEY = 'fairly.customer.protect-later';
+
 function finishIntro() {
   localStorage.setItem('fairly.intro.seen', '1');
   screen.value = pass.value ? 'home' : 'waiting';
+  if (!linkedEmail.value && !localStorage.getItem(PROTECT_DISMISSED_KEY)) sheet.value = 'protect';
 }
 
-async function run<T>(action: () => Promise<T>): Promise<T | undefined> {
+function protectLater() {
+  localStorage.setItem(PROTECT_DISMISSED_KEY, '1');
+  sheet.value = null;
+}
+
+async function run<T>(action: () => Promise<T>, step: string): Promise<T | undefined> {
+  if (busy.value) return undefined;
   busy.value = true;
-  error.value = '';
   try {
     const result = await action();
     await refresh();
     return result;
   } catch (cause) {
-    const message = cause instanceof Error ? cause.message : String(cause);
-    error.value = message.match(/[A-Z]+(?:_[A-Z]+)+/)?.[0] ?? 'Something went wrong. Try again.';
+    showError(step, cause);
     return undefined;
   } finally {
     busy.value = false;
@@ -225,7 +234,7 @@ async function run<T>(action: () => Promise<T>): Promise<T | undefined> {
 async function useBalance() {
   if (!wallet.value || !pass.value || useAmount.value <= 0) return;
   const amount = Math.min(useAmount.value, balance.value);
-  const code = await run(() => redeem(wallet.value!, pass.value!.token_id, dollarsToBaseUnits(amount)));
+  const code = await run(() => redeem(wallet.value!, pass.value!.token_id, dollarsToBaseUnits(amount)), 'use your balance');
   if (!code) return;
   activity.value = addActivity(pass.value.token_id, { title: 'Used at the counter', detail: `Code ${shortCode(code)}`, amount: -amount });
   lastCode.value = shortCode(code);
@@ -235,7 +244,7 @@ async function useBalance() {
 
 async function claim(index: number) {
   if (!wallet.value || !pass.value) return;
-  const code = await run(() => claimPerk(wallet.value!, pass.value!.token_id, index));
+  const code = await run(() => claimPerk(wallet.value!, pass.value!.token_id, index), 'claim the perk');
   if (!code) return;
   lastCode.value = shortCode(code);
   lastCodeLabel.value = tiers.value[index].perk ?? 'Perk';
@@ -245,20 +254,19 @@ async function claim(index: number) {
 
 async function sell() {
   if (!wallet.value || !pass.value) return;
-  await run(() => listPass(wallet.value!, pass.value!.token_id, dollarsToBaseUnits(price.value)));
+  await run(() => listPass(wallet.value!, pass.value!.token_id, dollarsToBaseUnits(price.value)), 'list your card');
   if (pass.value?.listing_price) sheet.value = 'listed';
 }
 
 async function unlist() {
   if (!wallet.value || !pass.value) return;
-  await run(() => cancelListing(wallet.value!, pass.value!.token_id));
+  await run(() => cancelListing(wallet.value!, pass.value!.token_id), 'cancel the listing');
   sheet.value = null;
 }
 
 async function simulatePurchase() {
   if (!pass.value) return;
   busy.value = true;
-  error.value = '';
   try {
     const amountCents = 350 + Math.floor(Math.random() * 6) * 50;
     const response = await fetch('/api/demo/purchase', {
@@ -271,7 +279,61 @@ async function simulatePurchase() {
     screen.value = 'home';
     await refresh();
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'PURCHASE_FAILED';
+    showError('record the purchase', cause);
+  } finally {
+    busy.value = false;
+  }
+}
+
+const EMAIL_KEY = 'fairly.customer.email';
+const emailReady = nearAuthAvailable();
+const linkedEmail = ref<string | null>(typeof localStorage === 'undefined' ? null : localStorage.getItem(EMAIL_KEY));
+
+
+async function protectWithEmail() {
+  if (!wallet.value) return;
+  if (busy.value) return;
+  busy.value = true;
+  try {
+    const identity = await linkEmail(wallet.value, 'customer');
+    linkedEmail.value = identity.email ?? 'your email';
+    localStorage.setItem(EMAIL_KEY, linkedEmail.value);
+    showToast('success', 'Card protected', `You can recover it with ${linkedEmail.value}.`);
+  } catch (cause) {
+    showToast('error', 'Could not link your email', nearAuthMessage(cause));
+  } finally {
+    busy.value = false;
+  }
+}
+
+const pendingRecovery = ref<PendingRecovery | null>(null);
+
+async function recoverByEmail() {
+  if (busy.value) return;
+  busy.value = true;
+  try {
+    pendingRecovery.value = await startRecovery('customer', 'fairly.customer.key');
+    sheet.value = 'recover';
+  } catch (cause) {
+    showToast('error', 'Could not find your card', nearAuthMessage(cause));
+  } finally {
+    busy.value = false;
+  }
+}
+
+async function approveRecovery() {
+  if (!pendingRecovery.value || busy.value) return;
+  busy.value = true;
+  try {
+    wallet.value = await pendingRecovery.value.approve();
+    pendingRecovery.value = null;
+    sheet.value = null;
+    await refresh();
+    screen.value = pass.value ? 'home' : 'waiting';
+    listen();
+    showToast('success', 'Card recovered', 'This browser can use your card again.');
+  } catch (cause) {
+    showToast('error', 'Could not finish the recovery', nearAuthMessage(cause));
   } finally {
     busy.value = false;
   }
@@ -286,13 +348,13 @@ async function restoreFromFile(event: Event) {
     screen.value = pass.value ? 'home' : 'waiting';
     listen();
   } catch {
-    error.value = 'That file is not a Fairly backup.';
+    showToast('error', 'Could not restore the backup', 'That file is not a Fairly backup.');
   }
 }
 
 async function downloadBackup() {
   if (!wallet.value) return;
-  const recovery = await run(() => backupKey(wallet.value!));
+  const recovery = await run(() => backupKey(wallet.value!), 'back up your card');
   if (!recovery) return;
   const blob = new Blob([backupText('Fairly card backup', wallet.value.accountId, recovery)], { type: 'text/plain' });
   const link = document.createElement('a');
@@ -347,13 +409,15 @@ onBeforeUnmount(stopListening);
         Get <span :style="{ color: program.brand_color }">{{ formatPercent(program.effective_cashback_bps) }}</span> back.<br />Every visit.
       </h1>
       <p class="relative mt-3 text-lg text-cream/70">Your card keeps the money.</p>
-      <p v-if="error" class="relative mt-4 rounded-xl2 bg-white/10 px-4 py-3 text-sm font-semibold">{{ error }}</p>
       <button
         class="relative mt-auto flex h-16 shrink-0 items-center justify-between rounded-full bg-cream pr-2 pl-7 text-lg font-semibold text-ink transition active:scale-[.98] disabled:opacity-70"
         :disabled="busy"
         @click="join"
       >
-        <span>{{ busy ? 'Creating your card…' : 'Get my card' }}</span>
+        <span class="flex items-center gap-3">
+          <span v-if="busy" class="size-5 animate-spin rounded-full border-[3px] border-ink/20 border-t-ink" aria-hidden="true" />
+          {{ busy ? 'Creating your card…' : 'Get my card' }}
+        </span>
         <span class="grid size-12 place-items-center rounded-full bg-sun text-ink"><AppIcon name="arrow" class="size-6" /></span>
       </button>
       <p class="relative mt-3 text-center text-sm text-cream/60">No app. No sign-up. <span class="font-mono text-xs opacity-70">(demo · test money)</span></p>
@@ -361,6 +425,9 @@ onBeforeUnmount(stopListening);
         I have a backup file
         <input type="file" accept=".txt,text/plain" class="hidden" @change="restoreFromFile" />
       </label>
+      <button v-if="emailReady" class="relative mt-2 flex items-center justify-center gap-2 text-sm font-semibold text-cream/70 underline underline-offset-4 disabled:opacity-50" :disabled="busy" @click="recoverByEmail">
+        <BusySpinner v-if="busy" />{{ busy ? 'Waiting for NEAR Auth…' : 'Recover my card with email' }}
+      </button>
     </section>
 
     <section v-else-if="screen === 'intro'" class="relative flex h-[calc(100dvh-1.75rem)] flex-col pt-12 pb-8 transition-colors duration-500" :class="SLIDES[slide].background">
@@ -592,10 +659,6 @@ onBeforeUnmount(stopListening);
       <button class="mt-3 h-12 px-6 font-semibold" @click="levelUp = false">Later</button>
     </div>
 
-    <p v-if="error && screen !== 'join'" class="fixed inset-x-4 top-4 z-50 mx-auto max-w-[400px] rounded-xl2 bg-ink px-4 py-3 text-sm font-semibold text-white shadow-card">
-      {{ error }}
-      <button class="float-right opacity-60" aria-label="Dismiss" @click="error = ''">×</button>
-    </p>
 
     <BottomSheet :open="sheet !== null" @close="sheet = null">
       <div v-if="sheet === 'use' && pass">
@@ -682,6 +745,41 @@ onBeforeUnmount(stopListening);
         </div>
       </div>
 
+      <div v-else-if="sheet === 'recover' && pendingRecovery" class="text-center">
+        <span class="mx-auto grid size-16 place-items-center rounded-full bg-mint"><AppIcon name="check" class="size-8" /></span>
+        <h3 class="mt-4 text-3xl font-extrabold tracking-tight">Card found</h3>
+        <p class="mt-2 text-ink/60">Signed in{{ pendingRecovery.email ? ` as ${pendingRecovery.email}` : '' }}. One more step: approve adding this browser to your card. NEAR Auth opens again to confirm.</p>
+        <button class="mt-6 flex h-14 w-full items-center justify-center gap-3 rounded-full bg-ink font-semibold text-white disabled:opacity-50" :disabled="busy" @click="approveRecovery">
+          <BusySpinner v-if="busy" />{{ busy ? 'Recovering your card…' : 'Approve with NEAR Auth' }}
+        </button>
+        <button class="mt-2 h-12 w-full rounded-full font-semibold" :disabled="busy" @click="sheet = null; pendingRecovery = null">Cancel</button>
+      </div>
+
+      <div v-else-if="sheet === 'protect'" class="text-center">
+        <span class="mx-auto grid size-16 place-items-center rounded-full bg-mint"><AppIcon :name="linkedEmail ? 'check' : 'users'" class="size-8" /></span>
+        <h3 class="mt-4 text-3xl font-extrabold tracking-tight">{{ linkedEmail ? 'Your card is protected' : 'Keep your card safe' }}</h3>
+        <p class="mt-2 text-ink/60">
+          {{
+            linkedEmail
+              ? `If you lose this phone or clear the browser, sign in with ${linkedEmail} to get the card back.`
+              : 'Your card lives in this browser. Link an email so you can get it back on a new phone, with its balance and level.'
+          }}
+        </p>
+        <template v-if="!linkedEmail">
+          <button v-if="emailReady" class="mt-6 flex h-14 w-full items-center justify-center gap-3 rounded-full bg-ink font-semibold text-white disabled:opacity-50" :disabled="busy" @click="protectWithEmail">
+            <BusySpinner v-if="busy" />
+            {{ busy ? 'Waiting for NEAR Auth…' : 'Protect with email' }}
+          </button>
+          <button v-else class="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-ink font-semibold text-white disabled:opacity-60" :disabled="busy" @click="downloadBackup">
+            <BusySpinner v-if="busy" /><AppIcon v-else name="download" class="size-5" /> {{ busy ? 'Preparing your backup…' : 'Save a backup file' }}
+          </button>
+          <p class="mt-3 text-xs text-ink/50">Your email stays with NEAR Auth. Fairly never stores it.</p>
+          <button class="mt-2 h-12 w-full rounded-full font-semibold" @click="protectLater">Later</button>
+          <p class="text-xs text-ink/50">You can do it any time from the <b>?</b> button at the top.</p>
+        </template>
+        <button v-else class="mt-6 h-14 w-full rounded-full bg-ink font-semibold text-white" @click="sheet = null">Done</button>
+      </div>
+
       <div v-else-if="sheet === 'help'">
         <h3 class="text-3xl font-extrabold tracking-tight">How it works</h3>
         <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
@@ -690,15 +788,25 @@ onBeforeUnmount(stopListening);
           <div class="rounded-xl2 bg-lilac-soft p-4"><AppIcon name="star" class="size-7" /><p class="mt-3 font-bold">Level up</p><p class="text-ink/60">unlock perks</p></div>
           <div class="rounded-xl2 bg-mint-soft p-4"><AppIcon name="tag" class="size-7" /><p class="mt-3 font-bold">Spend or sell</p><p class="text-ink/60">value stays inside</p></div>
         </div>
-        <button class="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink font-semibold text-white" @click="downloadBackup">
-          <AppIcon name="download" class="size-5" /> Back up my card
+        <button class="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink font-semibold text-white disabled:opacity-60" :disabled="busy" @click="downloadBackup">
+          <BusySpinner v-if="busy" /><AppIcon v-else name="download" class="size-5" /> {{ busy ? 'Preparing your backup…' : 'Back up my card' }}
         </button>
+        <button
+          v-if="emailReady && !linkedEmail"
+          class="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white font-semibold shadow-soft"
+          @click="sheet = 'protect'"
+        >
+          <AppIcon name="users" class="size-5" /> Protect my card with email
+        </button>
+        <p v-else-if="linkedEmail" class="mt-2 text-center text-sm text-ink/60">Linked to {{ linkedEmail }}. You can recover this card on a new phone.</p>
+        <p v-else class="mt-2 text-center text-xs text-ink/50">Email recovery with NEAR Auth works in the local build; the hosted demo is waiting for approval.</p>
         <a v-if="wallet" :href="accountUrl(wallet.accountId)" target="_blank" rel="noopener" class="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white font-semibold shadow-soft">
           <AppIcon name="link" class="size-5" /> View on NEAR explorer
         </a>
         <button class="mt-2 h-12 w-full rounded-full font-semibold" @click="sheet = null; slide = 0; screen = 'intro'">Replay intro</button>
       </div>
     </BottomSheet>
+    <ToastStack />
   </div>
 </template>
 

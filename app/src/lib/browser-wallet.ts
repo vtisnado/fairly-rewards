@@ -127,6 +127,11 @@ export async function createWallet(name: string): Promise<BrowserWallet> {
   return toWallet(stored);
 }
 
+export async function pendingWalletFor(accountId: string): Promise<{ wallet: BrowserWallet; keep: (name: string) => Promise<void> }> {
+  const stored = { ...(await generate()), accountId };
+  return { wallet: toWallet(stored), keep: (name) => writeKey(name, stored).then(() => undefined) };
+}
+
 export const loadOrCreateWallet = async (name: string) => (await loadWallet(name)) ?? createWallet(name);
 
 export function parseBackup(text: string): { accountId: string; secretKey: KeyPairString } {
@@ -146,6 +151,18 @@ export async function importWallet(name: string, backup: string): Promise<Browse
 
 export const backupText = (label: string, accountId: string, secretKey: string) =>
   `${label}\nAccount: ${accountId}\nKey: ${secretKey}\nKeep this file private. Anyone with it controls the account.\n`;
+
+export async function waitForAccount(wallet: BrowserWallet, attempts = 20): Promise<void> {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      await provider.viewAccessKey({ accountId: wallet.accountId, publicKey: wallet.publicKey, finality: 'final' });
+      return;
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 750));
+    }
+  }
+  throw new Error('ACCOUNT_NOT_READY');
+}
 
 export async function relay<T>(wallet: BrowserWallet, receiverId: string, calls: Action[]): Promise<T> {
   const { signedDelegate } = await new Account(wallet.accountId, provider, wallet.signer).createSignedMetaTransaction({

@@ -55,7 +55,8 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 | T2.12 | Merchant self-serve: setup wizard, browser account, boosts, withdrawals, pause, device pairing, key backup | UI-001, UI-003, ONB-011, ONB-012 | done |
 | T2.13 | Install @astrojs/check and run type checks in Docker | NFR | todo |
 | T2.14 | One program per business, time zone, manager role, device pause, location edit, boost suggestions | PROG-015..017, BST-010, LOC-010 | done |
-| T2.15 | Email linking for customers and businesses with NEAR Auth (FastAuth) | ONB-007 | todo |
+| T2.15 | Email recovery for customers and businesses with NEAR Auth (FastAuth) | ONB-013..015 | done |
+| T2.19 | Ask NEAR Auth operators to allow the hosted origin on the testnet login | ONB-015 | todo |
 | T2.16 | Browser E2E tests with Playwright: customer and counter, balance codes, camera fallback, business setup, device pairing and pause, manager invite | UI-001..014 | done |
 | T2.17 | E2E for resale and royalties | SALE-001..010 | done |
 | T2.18 | Non-extractable WebCrypto keys, recovery-key backups and strict CSP, with E2E checks | NFR-012..014 | done |

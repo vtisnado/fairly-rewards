@@ -10,7 +10,7 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'e2e-report' }]],
   outputDir: 'e2e-results',
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:4321',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

@@ -21,6 +21,7 @@ export async function joinAsCustomer(page: Page, slug = DEMO_SLUG): Promise<stri
   await page.goto(`/join/${slug}`);
   await page.getByRole('button', { name: /Get my card/ }).click();
   await page.getByRole('button', { name: 'Skip' }).click({ timeout: 90_000 });
+  await page.getByRole('button', { name: 'Later' }).click();
   await expect(page.getByText('Use balance')).toBeVisible({ timeout: 90_000 });
   return `${slug}:${(await cardNumberOn(page)).replace('-', '')}`;
 }

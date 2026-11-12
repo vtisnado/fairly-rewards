@@ -2,10 +2,14 @@ import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { DEMO_SLUG, cardNumberOn, joinAsCustomer, phone } from './helpers';
 
+test.afterEach(async ({ browser }) => {
+  await Promise.all(browser.contexts().map((context) => context.close()));
+});
+
 test('pages send a content security policy', async ({ request }) => {
   const response = await request.get(`/join/${DEMO_SLUG}`);
   const policy = response.headers()['content-security-policy'] ?? '';
-  test.skip(!policy && (process.env.E2E_BASE_URL ?? '').includes(':4321'), 'Astro applies the policy only to production builds');
+  test.skip(!policy && (process.env.E2E_BASE_URL ?? '').includes(':3000'), 'Astro applies the policy only to production builds');
   expect(policy).toContain("default-src 'self'");
   expect(policy).toContain("object-src 'none'");
   expect(policy).toMatch(/script-src 'self'( 'sha256-[^']+')+;/);

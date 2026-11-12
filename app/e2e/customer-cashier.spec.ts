@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { DEMO_SLUG, cardCode, closeCashierGuide, joinAsCustomer, phone, tablet, typeOnKeypad } from './helpers';
 
+test.afterEach(async ({ browser }) => {
+  await Promise.all(browser.contexts().map((context) => context.close()));
+});
+
 test('customer joins, earns cashback at the counter and spends it with a balance code', async ({ browser }) => {
   const customer = await phone(browser);
   const tokenId = await joinAsCustomer(customer);

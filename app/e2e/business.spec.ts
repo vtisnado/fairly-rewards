@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { desktop, pairingCodeOn, tablet } from './helpers';
 
+test.afterEach(async ({ browser }) => {
+  await Promise.all(browser.contexts().map((context) => context.close()));
+});
+
 test('a business registers, connects a counter device, pauses it and adds a manager', async ({ browser }) => {
   const slug = `e2e-${Date.now().toString(36)}`;
   const owner = await desktop(browser);

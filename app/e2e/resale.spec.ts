@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { DEMO_SLUG, cardCode, cardNumberOn, desktop, joinAsCustomer, phone } from './helpers';
 
+test.afterEach(async ({ browser }) => {
+  await Promise.all(browser.contexts().map((context) => context.close()));
+});
+
 const formatted = (tokenId: string) => `${cardCode(tokenId).slice(0, 3)}-${cardCode(tokenId).slice(3)}`;
 
 test('a customer sells a card on the market, the buyer gets the balance and the shop earns its royalty', async ({ browser }) => {

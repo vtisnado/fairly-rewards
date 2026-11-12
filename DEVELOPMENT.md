@@ -42,7 +42,7 @@ The `dev` image ships Rust (stable, `wasm32-unknown-unknown`), cargo-near 0.23, 
 | Test contracts | `docker compose run --rm dev sh -c "cd contracts && cargo test"` |
 | Deploy contracts to testnet | `docker compose run --rm dev ./scripts/deploy` |
 | Install web dependencies | `docker compose run --rm dev pnpm -C app install` |
-| Web app dev server | `docker compose run --rm --service-ports dev pnpm -C app dev` → http://localhost:4321 |
+| Web app dev server | `docker compose run --rm --service-ports dev pnpm -C app dev` → http://localhost:3000 |
 | API (Workers) dev server | port 8787 |
 | Seed demo data | `docker compose run --rm dev ./scripts/seed` |
 | Start local Supabase (Postgres, Realtime, Studio at http://localhost:54323) | `docker compose run --rm supabase start` |

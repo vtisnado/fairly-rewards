@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ToastStack from '../ui/ToastStack.vue';
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import AppIcon from '../ui/AppIcon.vue';
 import InfoTip from '../ui/InfoTip.vue';
@@ -29,7 +30,10 @@ import {
 } from '../../lib/merchant-actions';
 import { shortAddress, type Place } from '../../lib/geocoding';
 import { lookupPairing } from '../../lib/pairing';
+import { linkEmail, nearAuthAvailable, nearAuthMessage } from '../../lib/near-auth';
 import { offsetLabel } from '../../lib/timezone';
+import { showToast, type ToastKind } from '../../lib/toast';
+import BusySpinner from '../ui/BusySpinner.vue';
 import type { IconName } from '../../lib/icons';
 import {
   change,
@@ -113,10 +117,8 @@ const search = ref('');
 const connection = ref<ConnectionState>('connecting');
 const loading = ref(true);
 const funding = ref(false);
-const notice = ref('');
 const freshIds = ref(new Set<number>());
 let unsubscribe = () => {};
-let noticeTimer = 0;
 
 const brand = computed(() => program.value.brand_color);
 const brandInk = computed(() => readableTextColor(brand.value));
@@ -352,7 +354,7 @@ async function runAction(task: () => Promise<void>, success: string) {
     showNotice(success);
     return true;
   } catch (cause) {
-    showNotice(actionError(cause));
+    showToast('error', 'Could not save the change', actionError(cause));
     return false;
   }
 }
@@ -464,19 +466,45 @@ function exportCsv() {
   URL.revokeObjectURL(link.href);
 }
 
-async function downloadKey() {
+const OWNER_EMAIL_KEY = 'fairly.merchant.email';
+const emailReady = nearAuthAvailable();
+const linkedEmail = ref<string | null>(typeof localStorage === 'undefined' ? null : localStorage.getItem(OWNER_EMAIL_KEY));
+const linking = ref(false);
+
+async function protectWithEmail() {
   const wallet = await loadMerchant();
   if (!wallet) return;
+  linking.value = true;
+  try {
+    const identity = await linkEmail(wallet, 'merchant');
+    linkedEmail.value = identity.email ?? 'your email';
+    localStorage.setItem(OWNER_EMAIL_KEY, linkedEmail.value);
+    showNotice('Email linked. You can recover the business on a new device.');
+  } catch (cause) {
+    showToast('error', 'Could not link your email', nearAuthMessage(cause));
+  } finally {
+    linking.value = false;
+  }
+}
+
+const backingUp = ref(false);
+
+async function downloadKey() {
+  const wallet = await loadMerchant();
+  if (!wallet || backingUp.value) return;
   let recovery: string;
+  backingUp.value = true;
   try {
     recovery = await merchantBackupKey(wallet);
   } catch (cause) {
-    showNotice(actionError(cause));
+    backingUp.value = false;
+    showToast('error', 'Could not prepare the backup', actionError(cause));
     return;
   }
   const link = document.createElement('a');
   link.href = URL.createObjectURL(new Blob([backupText('Fairly business key', wallet.accountId, recovery)], { type: 'text/plain' }));
   link.download = `fairly-business-key-${program.value.slug}.txt`;
+  backingUp.value = false;
   link.click();
   URL.revokeObjectURL(link.href);
 }
@@ -523,10 +551,8 @@ const shortAccount = (account: string) => (account.length > 32 ? `${account.slic
 
 watch(view, () => window.scrollTo({ top: 0 }));
 
-function showNotice(text: string) {
-  notice.value = text;
-  clearTimeout(noticeTimer);
-  noticeTimer = window.setTimeout(() => (notice.value = ''), 4000);
+function showNotice(text: string, kind: ToastKind = 'success') {
+  showToast(kind, text);
 }
 
 async function refreshProgram() {
@@ -556,7 +582,7 @@ function onEvent(event: FairlyEvent) {
     freshIds.value = next;
   }, 2000);
   if (event.event === 'purchase') {
-    showNotice(`${cardCodeOf(String(event.token_id))} bought ${formatMoney(String(Number(event.data.amount_cents) * 10_000))} at ${locationName(String(event.data.location_id))}`);
+    showNotice(`${cardCodeOf(String(event.token_id))} bought ${formatMoney(String(Number(event.data.amount_cents) * 10_000))} at ${locationName(String(event.data.location_id))}`, 'info');
   }
   if (event.token_id) refreshPass(event.token_id);
   refreshProgram();
@@ -599,7 +625,6 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   unsubscribe();
-  clearTimeout(noticeTimer);
 });
 </script>
 
@@ -1190,8 +1215,25 @@ onBeforeUnmount(() => {
               <p class="font-bold">Back up your business key</p>
               <p class="text-sm text-bo-muted">The key lives in this browser. Keep a copy to manage the program from another device or after clearing the browser.</p>
             </div>
-            <button type="button" class="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-bo-line px-4 text-sm font-semibold transition hover:bg-bo-bg" @click="downloadKey">
-              <AppIcon name="download" class="size-4" />Download
+            <button type="button" class="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-bo-line px-4 text-sm font-semibold transition hover:bg-bo-bg disabled:opacity-50" :disabled="backingUp" @click="downloadKey">
+              <BusySpinner v-if="backingUp" /><AppIcon v-else name="download" class="size-4" />{{ backingUp ? 'Preparing…' : 'Download' }}
+            </button>
+          </div>
+          <div v-if="isOwner" class="flex items-center justify-between gap-4 p-6">
+            <div>
+              <p class="font-bold">Recover with email</p>
+              <p class="text-sm text-bo-muted">
+                {{ linkedEmail ? `Linked to ${linkedEmail}. Sign in with it on a new device to get the business back.` : emailReady ? 'Link an email with NEAR Auth. Fairly never stores it; NEAR Auth signs the recovery.' : 'Email recovery with NEAR Auth works in the local build; the hosted demo is waiting for approval.' }}
+              </p>
+            </div>
+            <button
+              v-if="emailReady && !linkedEmail"
+              type="button"
+              class="h-9 shrink-0 rounded-lg border border-bo-line px-4 text-sm font-semibold transition hover:bg-bo-bg disabled:opacity-40"
+              :disabled="linking"
+              @click="protectWithEmail"
+            >
+              <span class="flex items-center gap-2"><BusySpinner v-if="linking" />{{ linking ? 'Waiting for NEAR Auth…' : 'Link email' }}</span>
             </button>
           </div>
           <div class="flex items-center justify-between gap-4 p-6">
@@ -1438,7 +1480,8 @@ onBeforeUnmount(() => {
         <span class="mx-auto grid size-14 place-items-center rounded-full" :style="{ background: brand, color: brandInk }"><AppIcon name="check" class="size-7" /></span>
         <p class="mt-4 text-2xl font-bold">Your program is live</p>
         <p class="mt-1 text-bo-muted">{{ formatMoney(program.pool_balance) }} is in the cashback pool. Print the join poster and connect a counter device.</p>
-        <p class="mt-3 text-xs text-bo-muted">Your business key lives in this browser. Back it up from Settings.</p>
+        <p class="mt-3 text-xs text-bo-muted">Your business key lives in this browser. Link an email or save a backup in Settings so you never lose access.</p>
+        <button v-if="emailReady" type="button" class="mt-3 text-sm font-semibold underline underline-offset-4" @click="launched = false; view = 'settings'">Protect access now</button>
         <div class="mt-6 flex justify-center gap-2">
           <button type="button" class="h-11 rounded-lg px-5 font-semibold" :style="{ background: brand, color: brandInk }" @click="launched = false; view = 'devices'">Connect a device</button>
           <button type="button" class="h-11 rounded-lg border border-bo-line px-5 font-semibold hover:bg-bo-bg" @click="launched = false; view = 'join'">Join poster</button>
@@ -1446,9 +1489,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div v-if="notice" class="fixed right-6 bottom-6 z-[60] flex items-center gap-3 rounded-xl bg-bo-text px-4 py-3 text-sm font-semibold text-white shadow-lg print:hidden" role="status">
-      {{ notice }}
-      <button class="text-white/60 hover:text-white" aria-label="Close" @click="notice = ''">✕</button>
-    </div>
+
+    <ToastStack />
   </div>
 </template>

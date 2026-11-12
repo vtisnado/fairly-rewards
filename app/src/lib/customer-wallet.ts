@@ -1,5 +1,5 @@
 import { actions } from 'near-api-js';
-import { createRecoveryKey, createWallet as createStored, importWallet, loadWallet as loadStored, relay, type BrowserWallet } from './browser-wallet';
+import { createRecoveryKey, createWallet as createStored, importWallet, loadWallet as loadStored, relay, waitForAccount, type BrowserWallet } from './browser-wallet';
 import { dollarsToBaseUnits } from './format';
 import { fairlyContract, getPass, tusdcContract } from './near';
 
@@ -42,6 +42,7 @@ export async function ensureCustomer(): Promise<CustomerWallet> {
     const body = (await response.json().catch(() => ({}))) as { error?: string };
     throw new Error(body.error ?? 'ACCOUNT_FAILED');
   }
+  await waitForAccount(wallet);
   return wallet;
 }
 

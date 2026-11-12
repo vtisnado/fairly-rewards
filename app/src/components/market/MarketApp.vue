@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ToastStack from '../ui/ToastStack.vue';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import AppIcon from '../ui/AppIcon.vue';
 import SelectMenu from '../ui/SelectMenu.vue';
@@ -7,6 +8,7 @@ import { buyPass, cancelListing, ensureCustomer, loadWallet } from '../../lib/cu
 import { cardCodeOf, formatMoney, formatPercent } from '../../lib/format';
 import { getListings, getPassesByOwner, getProgram } from '../../lib/near';
 import { subscribeToInserts, type FairlyEvent } from '../../lib/realtime';
+import { errorDetail } from '../../lib/toast';
 import type { ListingView, ProgramView } from '../../lib/types';
 
 type Sort = 'save' | 'value' | 'price' | 'level';
@@ -108,7 +110,7 @@ async function buy() {
     picked.value = null;
     await Promise.all([load(), loadOwned()]);
   } catch (cause) {
-    error.value = ERRORS[cause instanceof Error ? cause.message : ''] ?? 'The purchase did not go through. Try again.';
+    error.value = ERRORS[cause instanceof Error ? cause.message : ''] ?? `The purchase did not go through. ${errorDetail(cause)}`;
   } finally {
     busy.value = false;
     step.value = '';
@@ -261,5 +263,6 @@ onBeforeUnmount(() => unsubscribers.forEach((unsubscribe) => unsubscribe()));
         <a :href="`/join/${bought.program_slug}`" class="mt-6 inline-flex h-14 items-center rounded-full bg-ink px-8 font-semibold text-white">Open my card</a>
       </div>
     </div>
+    <ToastStack />
   </div>
 </template>
