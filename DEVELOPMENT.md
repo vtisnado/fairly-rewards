@@ -69,3 +69,12 @@ The `supabase` service runs the Supabase CLI with the host Docker socket and hos
 
 ## Secrets
 Copy `.env.example` to `.env` and fill in testnet values. Never commit `.env` or key files. NEAR CLI credentials live in the `near-credentials` Docker volume, not in the repo.
+
+## End-to-end tests
+Browser tests run in the official Playwright image against the dev server and testnet, so nothing is installed on the host. Start the app first (`docker compose run --rm --service-ports dev pnpm -C app dev`), then:
+
+```sh
+docker compose run --rm e2e test
+```
+
+Reports land in `app/e2e-report/`. The tests create real testnet accounts paid by the sponsor, so run them with a funded sponsor account.

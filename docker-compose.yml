@@ -37,6 +37,22 @@ services:
     network_mode: host
     profiles: ["tools"]
 
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.65.0-noble
+    working_dir: /workspace/app
+    entrypoint: ["node", "node_modules/@playwright/test/cli.js"]
+    command: ["test"]
+    volumes:
+      - .:/workspace
+    environment:
+      E2E_BASE_URL: http://localhost:4321
+    env_file:
+      - path: .env
+        required: false
+    network_mode: host
+    ipc: host
+    profiles: ["tools"]
+
   design:
     image: nginx:alpine
     volumes:

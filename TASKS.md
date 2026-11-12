@@ -56,6 +56,9 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 | T2.13 | Install @astrojs/check and run type checks in Docker | NFR | todo |
 | T2.14 | One program per business, time zone, manager role, device pause, location edit, boost suggestions | PROG-015..017, BST-010, LOC-010 | done |
 | T2.15 | Email linking for customers and businesses with NEAR Auth (FastAuth) | ONB-007 | todo |
+| T2.16 | Browser E2E tests with Playwright: customer and counter, balance codes, camera fallback, business setup, device pairing and pause, manager invite | UI-001..014 | done |
+| T2.17 | E2E for resale and royalties once the market exists | SALE-001..006 | todo |
+| T2.18 | Non-extractable WebCrypto keys and strict CSP | NFR | todo |
 | T2.5 | Customer onboarding, join and relay routes | ONB-001..010, DEMO-005 | done |
 | T2.6 | Cashier POS: identify card (camera, code, recent), keypad purchase, honor balance codes live | UI-010..014, EVT-007 | done |
 | T2.7 | Customer pass screen + actions | UI-020..023 | done |
