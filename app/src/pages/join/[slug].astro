@@ -1,8 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import CustomerApp from '../../components/customer/CustomerApp.vue';
+import JoinApp from '../../components/wallet/JoinApp.vue';
 import { getProgram } from '../../lib/near';
-import { PUBLIC_DEMO_PROGRAM_SLUG } from 'astro:env/client';
+import { manifestUrl } from '../../lib/manifest';
 
 const program = Astro.params.slug ? await getProgram(Astro.params.slug).catch(() => null) : null;
 if (!program) {
@@ -10,6 +10,11 @@ if (!program) {
 }
 ---
 
-<BaseLayout title={`${program.name} card`} description={`Join the ${program.name} rewards club.`}>
-  <CustomerApp client:only="vue" program={program} isDemo={program.slug === PUBLIC_DEMO_PROGRAM_SLUG} />
+<BaseLayout
+  title={`${program.name} card`}
+  description={`Join the ${program.name} rewards club.`}
+  manifest={manifestUrl('wallet')}
+  appTitle="Fairly"
+>
+  <JoinApp client:only="vue" program={program} />
 </BaseLayout>

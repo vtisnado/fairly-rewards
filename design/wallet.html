@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Wallet · Fairly prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/base.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/setup.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+.hi, .stk { transition: transform 300ms cubic-bezier(.2,.8,.2,1), opacity 240ms ease-out; transition-delay: calc(var(--h) * 35ms); }
+.hi.hi-off { opacity: 0; transform: translateY(14px); transition-duration: 160ms, 140ms; transition-delay: 0ms; }
+.stk.hi-off { opacity: 0; transform: translateY(160px); transition-duration: 220ms, 160ms; transition-delay: 0ms; }
+.stk > div:first-child > div { box-shadow: 0 -8px 20px rgba(0,0,0,.2); }
+.stk.is-picked { opacity: 0; transition: none; }
+.stk.is-landed { transition: none; }
+.fade-d { transition: opacity 160ms ease-out; }
+.lift { transition: transform 420ms cubic-bezier(.22,.9,.3,1); }
+.lift.lift-back { transition-duration: 380ms; transition-delay: 130ms; }
+.navx { transition: transform 260ms cubic-bezier(.2,.8,.2,1); }
+.navx.nav-out { transform: translateY(170%); transition-duration: 200ms; }
+.ei { opacity: 0; transform: translateX(28px); transition: transform 130ms cubic-bezier(.4,0,1,1), opacity 110ms ease-in; transition-delay: calc(var(--i) * 25ms); }
+.in .ei { opacity: 1; transform: none; transition: transform 260ms cubic-bezier(.2,.8,.2,1), opacity 200ms ease-out; transition-delay: calc(90ms + var(--i) * 45ms); }
+.is-busy .stk, .is-busy .hi, .is-busy .ei, .is-busy .lift, .is-busy .navx { will-change: transform, opacity; }
+@keyframes ring { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 100; } }
+.ring { animation: ring 180s linear forwards; }
+@media (prefers-reduced-motion: reduce) { .stk, .hi, .fade-d, .lift, .navx, .ei { transition: none !important; } }
+@keyframes scan{0%,100%{top:15%}50%{top:82%}}
+</style>
+</head>
+<body class="bg-cream font-sans text-ink">
+<div x-data="wallet()" x-init="start()" class="min-h-screen p-6 lg:p-12">
+
+  <header class="max-w-[1400px] mx-auto">
+    <h1 class="text-5xl font-extrabold tracking-tight">Wallet</h1>
+    <p class="text-lg text-ink/60 mt-1">One app, every card. One rotating code for the counter. <span class="demo">(demo · test money)</span></p>
+    <div class="flex flex-wrap gap-2 mt-4 text-sm font-semibold">
+      <span class="h-9 px-4 rounded-full bg-white shadow-soft flex items-center">/wallet</span>
+      <span class="h-9 px-4 rounded-full bg-white shadow-soft flex items-center">/wallet/&lt;slug&gt;</span>
+      <span class="h-9 px-4 rounded-full bg-white shadow-soft flex items-center">/join/&lt;slug&gt; adds a card</span>
+      <span class="h-9 px-4 rounded-full bg-ink text-white flex items-center">Home screen shortcut: Fairly</span>
+    </div>
+  </header>
+
+  <div class="max-w-[1400px] mx-auto mt-10 flex flex-wrap gap-x-12 gap-y-16 justify-center xl:justify-start">
+
+    <!-- A. WALLET HOME -->
+    <figure>
+      <figcaption class="mb-4"><span class="font-extrabold text-xl">A · Wallet home</span><p class="text-sm text-ink/55">All cards, code in the center button</p></figcaption>
+      <div class="phone"><div class="phone-screen bg-cream" x-ref="screenA" :class="busy && 'is-busy'">
+        <div class="phone-notch"></div>
+        <div class="absolute inset-0 flex flex-col">
+          <div class="flex-1 overflow-y-auto no-scrollbar px-5 pt-16 pb-32">
+            <header class="hi flex items-center justify-between" style="--h:0" :class="detail && !homeShow && 'hi-off'">
+              <div class="flex items-center gap-3">
+                <span class="w-11 h-11 rounded-full bg-lilac grid place-items-center font-bold">M</span>
+                <div><p class="text-xs text-ink/55">Your wallet</p><p class="font-bold text-lg leading-tight">Hi, Maria</p></div>
+              </div>
+              <button class="w-11 h-11 rounded-full bg-white shadow-soft grid place-items-center font-bold">?</button>
+            </header>
+
+            <div class="hi mt-5 rounded-xl2 bg-white shadow-soft p-3 flex items-center gap-3" style="--h:1" :class="detail && !homeShow && 'hi-off'">
+              <span class="w-10 h-10 rounded-full bg-coral-soft text-coral grid place-items-center" x-html="icon('pin','w-5 h-5')"></span>
+              <div class="flex-1"><p class="text-xs text-ink/55">Nearest to you</p><p class="font-bold leading-tight">Corner Café · 120 m</p></div>
+              <span class="text-sm font-semibold text-ink/50">4 cards</span>
+            </div>
+
+            <div class="hi flex items-center justify-between mt-6" style="--h:2" :class="detail && !homeShow && 'hi-off'">
+              <h3 class="text-xl font-bold">Cards</h3>
+              <div class="relative w-44" @click.outside="sortOpen=false">
+                <button @click="sortOpen=!sortOpen" class="w-full h-10 px-3 rounded-xl border bg-white text-ink text-sm font-semibold flex items-center justify-between transition" :class="sortOpen ? 'border-ink' : 'border-ink/10 hover:border-ink/40'"><span x-text="sorts.find(o=>o[0]===sort)[1]"></span><span class="transition" :class="sortOpen && 'rotate-180'" x-html="icon('chevron','w-4 h-4')"></span></button>
+                <div x-show="sortOpen" x-transition.origin.top class="absolute right-0 z-30 mt-1.5 w-full bg-white border border-ink/10 rounded-xl shadow-card p-1.5 text-sm font-semibold">
+                  <template x-for="o in sorts"><button @click="setSort(o[0])" class="w-full h-9 px-3 rounded-lg flex items-center justify-between hover:bg-cream transition"><span x-text="o[1]"></span><span x-show="o[0]===sort" x-html="icon('check','w-4 h-4')"></span></button></template>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3 pb-3" x-ref="list">
+              <template x-for="(c,i) in list()" :key="c.n"><div @click="open(c,$el)" :data-n="c.n" class="stk relative cursor-pointer" :class="[detail && (detail.n===c.n ? (landed ? 'is-landed' : 'is-picked') : (!homeShow ? 'hi-off' : ''))]" :style="`--h:${detail && detail.closing && i > pickedIndex ? 12 + i - pickedIndex : i+3};z-index:${i+1};height:${i===list().length-1 ? 'auto' : '72px'}`">
+                <div x-html="cardArt(c)"></div>
+                <span x-show="i<list().length-1" class="absolute right-3 top-[14px] h-9 px-3.5 rounded-full bg-ink text-white text-sm font-bold tabular-nums flex items-center gap-1.5"><span x-html="icon('star','w-3 h-3')" :style="`color:${TIERS[c.tier].color}`"></span><span x-text="money(c.balance)"></span></span>
+              </div></template>
+            </div>
+          </div>
+          <div x-show="detail" x-cloak class="absolute inset-0 z-30" :class="dOn && 'in'">
+            <div class="absolute inset-0 bg-cream fade-d" :style="`opacity:${bgOn?1:0}`"></div>
+            <header class="ei absolute inset-x-5 top-16 flex items-center justify-between" style="--i:0">
+              <button @click="close()" class="w-11 h-11 rounded-full bg-white shadow-soft grid place-items-center" x-html="icon('back','w-5 h-5')"></button>
+              <p class="font-bold" x-text="detail ? (detail.brand ? detail.brand.name : SHOPS[detail.shop].name) : ''"></p>
+              <span class="w-11 h-11"></span>
+            </header>
+            <div class="absolute left-5 right-5 top-[124px] lift" :class="detail && detail.closing && 'lift-back'" :style="`transform:translateY(${dOn ? 0 : startTop - 124}px);opacity:${landed ? 0 : 1}`" x-html="detail ? cardArt(detail) : ''"></div>
+            <div class="absolute inset-x-5 top-[348px] bottom-6 overflow-y-auto no-scrollbar">
+              <div class="ei rounded-xl2 bg-ink text-white p-3 flex items-center gap-3" style="--i:1"><span class="w-10 h-10 rounded-full grid place-items-center bg-white/10 text-gold" x-html="icon('star','w-5 h-5')"></span><div><p class="font-bold leading-tight">Next level in 2 visits</p><p class="text-xs text-white/60">Unlocks a perk</p></div></div>
+              <div class="ei grid grid-cols-3 gap-2 mt-2" style="--i:2">
+                <button class="rounded-xl2 bg-sun p-3 text-left"><span class="w-8 h-8 rounded-full bg-ink text-sun grid place-items-center" x-html="icon('tag','w-4 h-4')"></span><p class="mt-3 font-bold text-sm leading-tight">Use balance</p></button>
+                <button class="rounded-xl2 bg-lilac p-3 text-left"><span class="w-8 h-8 rounded-full bg-ink text-lilac grid place-items-center" x-html="icon('arrow','w-4 h-4 -rotate-45')"></span><p class="mt-3 font-bold text-sm leading-tight">Sell this card</p></button>
+                <button class="rounded-xl2 bg-mint p-3 text-left"><span class="w-8 h-8 rounded-full bg-ink text-mint grid place-items-center" x-html="icon('download','w-4 h-4')"></span><p class="mt-3 font-bold text-sm leading-tight">Backup</p></button>
+              </div>
+              <div class="ei" style="--i:3">
+                <h3 class="text-lg font-bold mt-4">History</h3>
+                <ul class="mt-2 space-y-2">
+                  <li class="bg-white rounded-xl2 p-3 flex items-center gap-3 shadow-soft"><span class="w-10 h-10 rounded-full bg-coral-soft text-coral grid place-items-center" x-html="icon('cup','w-5 h-5')"></span><div class="flex-1"><p class="font-semibold leading-tight">Purchase $5.00</p><p class="text-xs text-ink/50">Today 08:42</p></div><span class="rounded-full px-3 py-1 text-sm font-bold bg-sun">+$0.25</span></li>
+                  <li class="bg-white rounded-xl2 p-3 flex items-center gap-3 shadow-soft"><span class="w-10 h-10 rounded-full bg-lilac-soft grid place-items-center" x-html="icon('tag','w-5 h-5')"></span><div class="flex-1"><p class="font-semibold leading-tight">Used on order</p><p class="text-xs text-ink/50">Tuesday</p></div><span class="rounded-full px-3 py-1 text-sm font-bold bg-ink/5">-$1.50</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <nav class="navx absolute bottom-0 inset-x-0 z-40 h-24 bg-white rounded-t-xl3 shadow-[0_-10px_30px_-15px_rgba(0,0,0,.2)] grid grid-cols-5 items-center text-ink/40" :class="navOut && 'nav-out'">
+            <button class="grid place-items-center text-ink" x-html="icon('wallet')"></button>
+            <button class="grid place-items-center" x-html="icon('list')"></button>
+            <button class="grid place-items-center"><span class="w-16 h-16 -mt-10 rounded-full bg-coral text-ink grid place-items-center shadow-card ring-8 ring-cream" x-html="icon('qr','w-7 h-7')"></span></button>
+            <button class="grid place-items-center" x-html="icon('tag')"></button>
+            <button class="grid place-items-center" x-html="icon('settings')"></button>
+          </nav>
+        </div>
+      </div></div>
+    </figure>
+
+    <!-- B. CODE -->
+    <figure>
+      <figcaption class="mb-4"><span class="font-extrabold text-xl">B · Code</span><p class="text-sm text-ink/55">Rotates every 3 minutes</p></figcaption>
+      <div class="phone"><div class="phone-screen bg-ink text-white">
+        <div class="phone-notch"></div>
+        <div class="absolute inset-0 flex flex-col px-6 pt-16 pb-8">
+          <div class="flex items-center justify-between">
+            <button class="w-11 h-11 rounded-full bg-white/10 grid place-items-center" x-html="icon('back','w-5 h-5')"></button>
+            
+          </div>
+          <p class="mt-6 text-3xl font-extrabold tracking-tight leading-none">Show this<br>at the counter</p>
+
+          <div class="relative mt-6 mx-auto w-[300px] h-[300px]">
+            <div class="absolute inset-[6.5px] bg-white rounded-[19.75px] p-6" x-html="fakeQR(code)"></div>
+            <svg viewBox="0 0 120 120" class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+              <rect x-ref="ring" class="ring" x="1.5" y="1.5" width="117" height="117" rx="9" fill="none" :stroke="left < 30 ? '#FFD84D' : '#F2654F'" stroke-width="3" pathLength="100" stroke-dasharray="100"/>
+            </svg>
+          </div>
+
+          <div class="mt-6 text-center">
+            <p class="text-sm text-white/50">Or tell the cashier</p>
+            <p class="text-5xl font-extrabold tracking-[.12em] tabular-nums mt-1" x-text="code.slice(0,3) + '-' + code.slice(3)"></p>
+            <p class="mt-3 text-sm text-white/60 px-2">New code in <b class="text-white tabular-nums" x-text="fmt(left)"></b>. Screenshots stop working when the timer runs out.</p>
+          </div>
+
+          <div class="mt-auto rounded-xl2 bg-white/10 p-4 flex items-center gap-3">
+            <span class="w-11 h-11 rounded-full bg-sun text-ink grid place-items-center" x-html="icon('bolt','w-5 h-5')"></span>
+            <div class="flex-1"><p class="font-semibold leading-tight">Raise your brightness</p><p class="text-sm text-white/60">The counter reads it faster</p></div>
+          </div>
+        </div>
+      </div></div>
+    </figure>
+
+    <!-- C. CARD DETAIL -->
+    <figure id="detail">
+      <figcaption class="mb-4"><span class="font-extrabold text-xl">C · Card detail</span><p class="text-sm text-ink/55">/wallet/corner-cafe</p></figcaption>
+      <div class="phone"><div class="phone-screen bg-cream">
+        <div class="phone-notch"></div>
+        <div class="absolute inset-0 flex flex-col">
+          <div class="flex-1 overflow-y-auto no-scrollbar px-5 pt-16 pb-8">
+            <header class="flex items-center justify-between">
+              <button class="w-11 h-11 rounded-full bg-white shadow-soft grid place-items-center" x-html="icon('back','w-5 h-5')"></button>
+              <p class="font-bold">Corner Café</p>
+              <span class="w-11 h-11"></span>
+            </header>
+            <div class="mt-5" x-html="cardArt({shop:'cafe',balance:6.45,visits:4,tier:1,number:'0042'})"></div>
+
+            <div class="mt-4 rounded-xl2 bg-ink text-white p-4 flex items-center gap-4">
+              <div class="relative w-14 h-14 shrink-0">
+                <svg viewBox="0 0 36 36" class="w-14 h-14 -rotate-90"><circle cx="18" cy="18" r="15" fill="none" stroke="#ffffff22" stroke-width="4"/><circle cx="18" cy="18" r="15" fill="none" stroke="#FFC23D" stroke-width="4" stroke-linecap="round" stroke-dasharray="31 94"/></svg>
+                <span class="absolute inset-0 grid place-items-center text-gold" x-html="icon('star','w-5 h-5')"></span>
+              </div>
+              <div><p class="font-bold">2 visits to Gold</p><p class="text-sm text-white/60">Unlocks: Free drink monthly</p></div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 mt-3">
+              <button class="rounded-xl2 bg-sun p-3 text-left"><span class="w-9 h-9 rounded-full bg-ink text-sun grid place-items-center" x-html="icon('tag','w-4 h-4')"></span><p class="mt-4 font-bold text-sm leading-tight">Use balance</p></button>
+              <button class="rounded-xl2 bg-lilac p-3 text-left"><span class="w-9 h-9 rounded-full bg-ink text-lilac grid place-items-center" x-html="icon('arrow','w-4 h-4 -rotate-45')"></span><p class="mt-4 font-bold text-sm leading-tight">Sell this card</p></button>
+              <button class="rounded-xl2 bg-mint p-3 text-left"><span class="w-9 h-9 rounded-full bg-ink text-mint grid place-items-center" x-html="icon('download','w-4 h-4')"></span><p class="mt-4 font-bold text-sm leading-tight">Backup</p></button>
+            </div>
+
+            <div class="mt-3 rounded-xl2 bg-lilac-soft p-4 text-sm"><b>Selling moves only this card</b> and the $6.45 inside it. Your other 3 cards stay here. Corner Café gets 5% of the price.</div>
+
+            <div class="flex items-end justify-between mt-6"><h3 class="text-xl font-bold">History</h3><span class="text-sm text-ink/50">See all</span></div>
+            <ul class="mt-2 space-y-2">
+              <li class="bg-white rounded-xl2 p-3 flex items-center gap-3 shadow-soft"><span class="w-11 h-11 rounded-full bg-coral-soft text-coral grid place-items-center" x-html="icon('cup','w-5 h-5')"></span><div class="flex-1"><p class="font-semibold leading-tight">Purchase $5.00</p><p class="text-xs text-ink/50">Downtown · today 08:42</p></div><span class="rounded-full px-3 py-1 text-sm font-bold bg-sun">+$0.25</span></li>
+              <li class="bg-white rounded-xl2 p-3 flex items-center gap-3 shadow-soft"><span class="w-11 h-11 rounded-full bg-lilac-soft grid place-items-center" x-html="icon('tag','w-5 h-5')"></span><div class="flex-1"><p class="font-semibold leading-tight">Used on order</p><p class="text-xs text-ink/50">Downtown · Tue</p></div><span class="rounded-full px-3 py-1 text-sm font-bold bg-ink/5">-$1.50</span></li>
+              <li class="bg-white rounded-xl2 p-3 flex items-center gap-3 shadow-soft"><span class="w-11 h-11 rounded-full bg-coral-soft text-coral grid place-items-center" x-html="icon('cup','w-5 h-5')"></span><div class="flex-1"><p class="font-semibold leading-tight">Purchase $9.00</p><p class="text-xs text-ink/50">Downtown · Mon</p></div><span class="rounded-full px-3 py-1 text-sm font-bold bg-sun">+$0.45</span></li>
+            </ul>
+            <p class="mt-4 text-center text-sm font-semibold text-ink/50 flex items-center justify-center gap-1.5"><span x-html="icon('link','w-4 h-4')"></span>View on explorer</p>
+          </div>
+        </div>
+      </div></div>
+    </figure>
+
+    <!-- D. EMPTY / FIRST CARD -->
+    <figure>
+      <figcaption class="mb-4"><span class="font-extrabold text-xl">D · Empty and first card</span><p class="text-sm text-ink/55">Before and right after /join/crumb-bakery</p></figcaption>
+      <div class="flex gap-6">
+        <div class="phone"><div class="phone-screen bg-cream">
+          <div class="phone-notch"></div>
+          <div class="absolute inset-0 flex flex-col px-5 pt-16 pb-8">
+            <header class="flex items-center justify-between">
+              <div class="flex items-center gap-3"><span class="w-11 h-11 rounded-full bg-lilac grid place-items-center font-bold">M</span><div><p class="text-xs text-ink/55">Your wallet</p><p class="font-bold text-lg leading-tight">Welcome</p></div></div>
+              <button class="w-11 h-11 rounded-full bg-white shadow-soft grid place-items-center font-bold">?</button>
+            </header>
+            <div class="flex-1 flex flex-col items-center justify-center text-center">
+              <div class="relative w-56 h-44">
+                <div class="absolute inset-x-2 top-4 rotate-[-8deg] rounded-[20px] border-2 border-dashed border-ink/20 aspect-[1.6]"></div>
+                <div class="absolute inset-x-2 top-8 rotate-[5deg] rounded-[20px] border-2 border-dashed border-ink/30 aspect-[1.6] bg-cream"></div>
+                <div class="absolute -left-2 top-0 animate-float" x-html="coin('w-12 h-12')"></div>
+                <div class="absolute right-0 bottom-0 animate-float [animation-delay:-2s]" x-html="coin('w-9 h-9')"></div>
+              </div>
+              <h2 class="mt-6 text-3xl font-extrabold tracking-tight leading-none">No cards yet</h2>
+              <p class="mt-2 text-ink/65">Scan the Fairly QR at your favourite shop. The card lands here.</p>
+            </div>
+            <button class="h-14 rounded-full bg-ink text-white font-semibold flex items-center justify-between pl-7 pr-2"><span>Browse the market</span><span class="w-10 h-10 rounded-full bg-sun text-ink grid place-items-center" x-html="icon('arrow','w-5 h-5')"></span></button>
+          </div>
+        </div></div>
+
+        <div class="phone"><div class="phone-screen bg-cream">
+          <div class="phone-notch"></div>
+          <div class="absolute inset-0 flex flex-col px-5 pt-16 pb-8">
+            <header class="flex items-center justify-between">
+              <div class="flex items-center gap-3"><span class="w-11 h-11 rounded-full bg-lilac grid place-items-center font-bold">M</span><div><p class="text-xs text-ink/55">Your wallet</p><p class="font-bold text-lg leading-tight">Hi, Maria</p></div></div>
+              <button class="w-11 h-11 rounded-full bg-white shadow-soft grid place-items-center font-bold">?</button>
+            </header>
+            <div class="mt-6 rounded-xl2 bg-mint p-4 flex items-center gap-3">
+              <span class="w-11 h-11 rounded-full bg-ink text-mint grid place-items-center" x-html="icon('check','w-5 h-5')"></span>
+              <div><p class="font-bold leading-tight">Card added</p><p class="text-sm text-ink/70">Crumb Bakery is in your wallet</p></div>
+            </div>
+            <div class="mt-4 relative animate-pop">
+              <div x-html="cardArt({shop:'bakery',balance:0,visits:0,tier:0,number:'0117'})"></div>
+              <span class="absolute -top-3 -right-2 h-8 px-3 rounded-full bg-coral text-ink text-sm font-bold flex items-center shadow-soft">New</span>
+            </div>
+            <div class="mt-4 rounded-xl2 bg-white shadow-soft p-4">
+              <p class="font-bold">Earn 5% back on every visit</p>
+              <p class="text-sm text-ink/60 mt-1">Show your code at the counter. The cashier finds this card for you.</p>
+            </div>
+            <button class="mt-auto h-16 rounded-full bg-coral text-ink text-lg font-semibold flex items-center justify-between pl-7 pr-2"><span>Show my code</span><span class="w-12 h-12 rounded-full bg-ink text-coral grid place-items-center" x-html="icon('qr','w-6 h-6')"></span></button>
+            <p class="text-center text-sm text-ink/55 mt-3">Add Fairly to your home screen</p>
+          </div>
+        </div></div>
+      </div>
+    </figure>
+
+    <!-- E. COUNTER -->
+    <figure>
+      <figcaption class="mb-4"><span class="font-extrabold text-xl">E · Counter after a scan</span><p class="text-sm text-ink/55">Resolved card, and "no card yet"</p></figcaption>
+      <div class="flex gap-6">
+
+        <div class="phone"><div class="phone-screen bg-ink2 text-white">
+          <div class="phone-notch"></div>
+          <div class="absolute inset-0 flex flex-col px-5 pt-14 pb-5">
+            <header class="flex items-center justify-between">
+              <div class="flex items-center gap-3"><span class="w-10 h-10 rounded-lg bg-coral text-ink grid place-items-center" x-html="icon('cup','w-5 h-5')"></span><div><p class="font-bold leading-tight">Corner Café</p><p class="text-xs text-white/50">Downtown · Counter 1</p></div></div>
+              <span class="text-xs font-semibold tabular-nums text-white/60">$12.40 / $30</span>
+            </header>
+            <div class="mt-4 rounded-xl bg-mint/15 border border-mint/30 text-mint text-sm font-semibold px-3 py-2 flex items-center gap-2"><span x-html="icon('check','w-4 h-4')"></span>Code A7K-2QM found</div>
+            <div class="mt-4" x-html="cardArt({shop:'cafe',balance:6.45,visits:4,tier:1,number:'0042'})"></div>
+            <div class="flex items-center gap-3 mt-3">
+              <span class="w-9 h-9 rounded-full bg-lilac text-ink grid place-items-center font-bold">M</span>
+              <div class="flex-1"><p class="font-bold">Maria</p><p class="text-xs text-white/50">4 visits · Silver</p></div>
+              <button class="h-9 px-3 rounded-lg bg-white/10 text-xs font-semibold">Cancel</button>
+            </div>
+            <div class="mt-auto">
+              <div class="flex items-end justify-between"><p class="text-5xl font-extrabold tracking-tight tabular-nums">$0.00</p></div>
+              <div class="grid grid-cols-3 gap-2 mt-3">
+                <template x-for="k in ['1','2','3','4','5','6','7','8','9','00','0','del']"><span class="h-11 rounded-xl bg-white/[.07] grid place-items-center text-xl font-semibold" x-html="k==='del' ? icon('back','w-5 h-5') : k"></span></template>
+              </div>
+              <div class="mt-3 h-14 rounded-xl bg-coral text-ink text-lg font-bold flex items-center justify-between pl-6 pr-2 opacity-40"><span>Add to card</span><span class="w-10 h-10 rounded-lg bg-ink text-coral grid place-items-center" x-html="icon('check','w-5 h-5')"></span></div>
+            </div>
+          </div>
+        </div></div>
+
+        <div class="phone"><div class="phone-screen bg-ink2 text-white">
+          <div class="phone-notch"></div>
+          <div class="absolute inset-0 flex flex-col px-5 pt-14 pb-5">
+            <header class="flex items-center justify-between">
+              <div class="flex items-center gap-3"><span class="w-10 h-10 rounded-lg grid place-items-center" style="background:#FFE24A;color:#17161A" x-html="icon('cookie','w-5 h-5')"></span><div><p class="font-bold leading-tight">Crumb Bakery</p><p class="text-xs text-white/50">Market St · Counter 2</p></div></div>
+              <span class="text-xs font-semibold tabular-nums text-white/60">$4.10 / $30</span>
+            </header>
+            <div class="mt-4 rounded-xl bg-mint/15 border border-mint/30 text-mint text-sm font-semibold px-3 py-2 flex items-center gap-2"><span x-html="icon('check','w-4 h-4')"></span>Code M3X-9TD found</div>
+
+            <div class="mt-5 rounded-xl3 border-2 border-dashed border-white/20 p-5 text-center">
+              <div class="mx-auto w-20 h-20 rounded-full bg-white/10 grid place-items-center" x-html="icon('card','w-10 h-10')"></div>
+              <p class="mt-4 text-2xl font-extrabold tracking-tight">No card yet</p>
+              <p class="text-white/60 mt-1">This customer has no Crumb Bakery card. Issue one and add the purchase.</p>
+            </div>
+            <div class="mt-4 opacity-90" x-html="cardArt({shop:'bakery',balance:0,visits:0,tier:0,number:'0118'})"></div>
+            <p class="mt-2 text-xs text-white/50 text-center">Preview of the new card</p>
+
+            <div class="mt-auto">
+              <div class="h-14 rounded-xl bg-coral text-ink text-lg font-bold flex items-center justify-between pl-6 pr-2"><span>Issue card</span><span class="w-10 h-10 rounded-lg bg-ink text-coral grid place-items-center" x-html="icon('plus','w-5 h-5')"></span></div>
+              <div class="mt-2 h-12 rounded-xl border border-white/15 text-white/70 font-semibold grid place-items-center">Cancel</div>
+              <p class="mt-3 text-xs text-white/45 text-center">Or type the code: <span class="font-semibold text-white/70 tracking-widest">M3X-9TD</span></p>
+            </div>
+          </div>
+        </div></div>
+
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<script>
+const SHOPS_EXTRA = { restaurant: { name: 'Casa Lola', color: '#8FE0BF', text: '#17161A', mark: 'burger' } };
+function wallet() {
+  const samples = ['A7K2QM', 'M3X9TD', 'H4R8ZP', 'Q6WC5N'];
+  return {
+    sort: 'recent', sortOpen: false,
+    sorts: [['recent','Recent'],['nearest','Nearest'],['balance','Highest balance'],['oldest','Oldest']],
+    busy: false, detail: null, dOn: false, bgOn: false, landed: false, pickedIndex: -1, navOut: false, homeShow: true, startTop: 0, gen: 0, expiresAt: 0,
+    reduced: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    wait(ms) { return new Promise(r => setTimeout(r, this.reduced ? 0 : ms)); },
+    frame() { return new Promise(r => { let done = false; const go = () => { if (!done) { done = true; r(); } }; requestAnimationFrame(go); setTimeout(go, 60); }); },
+    positions() { const m = new Map(); this.$refs.list.querySelectorAll('[data-n]').forEach(el => m.set(el, el.getBoundingClientRect().top)); return m; },
+    async setSort(v) {
+      this.sortOpen = false;
+      if (v === this.sort || this.busy) return;
+      if (this.reduced) { this.sort = v; return; }
+      this.busy = true;
+      const first = this.positions();
+      this.sort = v;
+      await this.$nextTick();
+      const last = this.positions();
+      const moves = [];
+      [...last.keys()].forEach((el, i) => {
+        const dy = first.get(el) - last.get(el);
+        const side = i % 2 === 0 ? 1 : -1;
+        moves.push(el.animate([
+          { transform: `translateY(${dy}px)` },
+          { transform: `translate(${side * 12}px, ${dy * 0.45}px) rotate(${side * 1.5}deg)`, offset: 0.45 },
+          { transform: 'none' },
+        ], { duration: 450, easing: 'cubic-bezier(.2,.8,.2,1)' }).finished);
+      });
+      await Promise.all(moves);
+      this.busy = false;
+    },
+    async open(c, el) {
+      if (this.busy) return;
+      this.busy = true;
+      this.startTop = el.getBoundingClientRect().top - this.$refs.screenA.getBoundingClientRect().top;
+      this.detail = c;
+      this.landed = false;
+      this.pickedIndex = this.list().findIndex(x => x.n === c.n);
+      this.homeShow = true;
+      await this.$nextTick();
+      await this.frame();
+      this.homeShow = false;
+      this.dOn = true;
+      this.bgOn = true;
+      this.navOut = true;
+      await this.wait(420);
+      this.busy = false;
+    },
+    async close() {
+      if (this.busy) return;
+      this.busy = true;
+      const el = this.$refs.list.querySelector(`[data-n="${this.detail.n}"]`);
+      this.startTop = el.getBoundingClientRect().top - this.$refs.screenA.getBoundingClientRect().top;
+      this.detail = { ...this.detail, closing: true };
+      await this.frame();
+      this.dOn = false;
+      await this.wait(90);
+      this.bgOn = false;
+      this.homeShow = true;
+      await this.wait(200);
+      this.navOut = false;
+      await this.wait(230);
+      this.landed = true;
+      await this.wait(380);
+      this.detail = null;
+      this.busy = false;
+    },
+    list() {
+      const k = { recent: c => c.recent, nearest: c => c.dist, balance: c => -c.balance, oldest: c => -c.age }[this.sort];
+      return [...this.stack].sort((a, b) => k(a) - k(b));
+    },
+    stack: [
+      { shop:'cafe', balance:6.45, visits:4, tier:1, number:'0042', n:1, recent:1, dist:120, age:30 },
+      { shop:'bakery', balance:4.2, visits:2, tier:0, number:'0117', n:2, recent:2, dist:450, age:200 },
+      { shop:'restaurant', brand:SHOPS_EXTRA.restaurant, balance:5.6, visits:7, tier:2, number:'0301', n:3, recent:3, dist:900, age:90 },
+      { shop:'barber', balance:2.5, visits:1, tier:0, number:'0008', n:4, recent:4, dist:2100, age:400 },
+    ],
+    code: samples[0], left: 138, n: 0, timer: null,
+    fmt(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); },
+    start() {
+      this.expiresAt = Date.now() + this.left * 1000;
+      this.syncRing();
+      const run = () => { this.stop(); this.timer = setInterval(() => this.tick(), 1000); this.tick(); };
+      document.addEventListener('visibilitychange', () => { document.hidden ? this.stop() : run(); });
+      run();
+    },
+    syncRing() {
+      const r = this.$refs.ring;
+      r.style.animation = 'none';
+      void r.getBoundingClientRect();
+      r.style.animation = '';
+      r.style.animationDelay = '-' + (180 - this.left) + 's';
+    },
+    stop() { clearInterval(this.timer); this.timer = null; },
+    tick() {
+      this.left = Math.max(0, Math.ceil((this.expiresAt - Date.now()) / 1000));
+      if (this.left <= 0) { this.n = (this.n + 1) % samples.length; this.code = samples[this.n]; this.expiresAt = Date.now() + 180000; this.left = 180; this.syncRing(); }
+    },
+  };
+}
+</script>
+</body>
+</html>

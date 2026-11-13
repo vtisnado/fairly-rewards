@@ -5,7 +5,7 @@
 - **ONB-002** The key pair MUST be stored in browser storage and exportable as a recovery phrase/file from the customer screen.
 - **ONB-003** `POST /api/sponsor` MUST fund a new implicit account with a small amount of testnet NEAR (default 0.05) and register it on `tusdc`. It MUST rate-limit by IP and refuse accounts that already exist.
 - **ONB-004** The sponsor private key MUST come from environment variables only.
-- **ONB-005** After onboarding, the screen MUST show a QR code with the customer's account id for the cashier to issue a pass.
+- **ONB-005** *(superseded by WAL-005 and WAL-010)* After onboarding the wallet shows a rotating code, not the account id, and the cashier issues the pass from it.
 - **ONB-006** Merchants and cashiers MUST sign in with NEAR Wallet Selector (testnet), e.g. MyNearWallet or Meteor.
 - **ONB-008** `POST /api/join` MUST create and fund the customer account (ONB-003) and, only for the demo program, issue the pass with the demo cashier key so judges can try the flow alone. For other programs the cashier issues the pass (PASS-002).
 - **ONB-009** The customer screen MUST update within 3 seconds of a change to the pass (NFR-008) through real-time events (EVT-004) and animate balance changes.
@@ -16,3 +16,6 @@
 - **ONB-013** Email recovery with NEAR Auth (FastAuth): a customer or business owner can link an email or Google login. The app signs in with NEAR Auth, reads the MPC-derived public key for that identity (`derived_public_key` on the MPC contract, path `jwt#https://<auth domain>/#<sub>`) and adds it as a full-access key to their own account through the relay. Fairly stores only the public key and account id (`recovery_links`), never the email.
 - **ONB-014** To recover on a new browser, the person signs in with the same email; the app looks up the account, builds an `AddKey` transaction for a new non-extractable browser key signed by the NEAR Auth key, asks NEAR Auth to sign it (one Auth0 window), and the sponsor submits the `sign` call to the NEAR Auth contract. The browser then broadcasts the signed transaction.
 - **ONB-015** NEAR Auth is offered only on origins accepted by its login (`PUBLIC_NEAR_AUTH_ORIGINS`, default `http://localhost:3000`, which the shared testnet client accepts). Elsewhere the screens explain that email recovery is pending approval and the backup file remains available.
+- **ONB-016** A customer has one account for all cards. The key `fairly.customer.key` is created on the first visit to `/join/<slug>` or `/wallet` and reused for every business. Opening `/join/<other-slug>` never creates a second key.
+- **ONB-017** On iPhone the home screen app has separate storage, so the wallet shortcut is connected once with a `shortcut` pairing code (D-039, D-042). Because the wallet is not tied to a business, the code is created with the reserved program slug `wallet` and the connected account is the one holding the cards. Cards added later need no new connection.
+

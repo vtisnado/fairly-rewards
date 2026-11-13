@@ -66,7 +66,16 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 | T2.8 | Events in Supabase and real-time screens without polling | EVT-001..005 | done |
 | T2.9 | Block follower for events that skip the API (cashier signing directly) | EVT-006 | todo |
 | T2.11 | Cashier device keys for non-demo programs, paired by QR | BUY-008, UI-014 | done |
+| T2.20 | Home screen shortcuts: manifest per context, install offers, iOS connect-by-code | UI-060..066 | done |
+| T2.21 | Service worker `/sw.js`: network-first passthrough, no caches, registered with install criteria; remove the UI-066 no-worker rule | NFR-015, D-043 | done |
+| T2.22 | `/wallet` page: list all cards, total balance, empty state, live updates; `/join/<slug>` adds the card and opens the wallet; card detail at `/wallet/<slug>` | WAL-001..004, WAL-013, WAL-020, UI-070, ONB-016 | done |
+| T2.23 | Rotating customer code API: `customer_codes` migration, `POST /api/customer-code`, code screen with QR, typed code, countdown and rotation | WAL-005..008, WAL-016..019, NFR-016 | done |
+| T2.24 | Counter lookup by customer code: `POST /api/cashier/customer-code`, scan and typed field, resolve the card of the counter's program, continue purchase and redeem flows | WAL-009, WAL-011, WAL-012 | done |
+| T2.25 | Issue a card on the spot when the resolved customer has none | WAL-010 | done |
+| T2.26 | Shortcut consolidation: wallet manifest, remove the card manifest, install offer on the wallet, iOS connect once with slug `wallet` | UI-067, UI-068, WAL-014, ONB-017 | done |
+| T2.27 | Update E2E: wallet with two cards, code rotation and expiry, counter resolve, issue on the spot, sell one card from the wallet, service worker never caches API | WAL-*, SALE-011, NFR-015 | done |
 | T2.10 | Customer key recovery (passkey proposed, pending decision) | ONB-002 | todo |
+| T2.28 | Wallet follow-ups: E2E for `RATE_LIMITED` on code resolve (needs a production-limits run), big level-up screen and intro slides of the old card screen, wallet code offline state check on a real phone | WAL-006, WAL-009 | todo |
 
 ## Phase 3: Market, demo, polish (2026-11-13)
 | Id | Task | Specs | Status |
@@ -85,3 +94,8 @@ Deadline: **2026-11-14 23:59 UTC**. Today plan starts 2026-11-10.
 | T4.3 | Draft X post; human publishes | - | todo |
 | T4.4 | Publication checklist; human makes repo public | docs/publication.md | todo |
 | T4.5 | Build submission payload; human confirms; submit once | HACKATHON.md | todo |
+
+## Backlog (after the hackathon)
+| Id | Task | Specs | Status |
+|---|---|---|---|
+| B1 | Apple Wallet and Google Wallet passes for each card, updated on balance changes | WAL-015 | todo |

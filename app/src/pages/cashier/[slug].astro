@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CashierApp from '../../components/cashier/CashierApp.vue';
 import { getProgram } from '../../lib/near';
+import { manifestUrl } from '../../lib/manifest';
 import { cashierLocation } from '../../lib/server/cashier';
 import { demoProgramSlug } from '../../lib/server/signers';
 
@@ -14,6 +15,10 @@ const isDemo = program.slug === demoProgramSlug;
 const demoLocationId = isDemo ? await cashierLocation(program.slug) : null;
 ---
 
-<BaseLayout title={`${program.name} counter`} description="Scan, type the total, add cashback." surface="ink" noindex>
+<BaseLayout title={`${program.name} counter`} description="Scan, type the total, add cashback." surface="ink"
+  noindex
+  manifest={manifestUrl('counter', program.slug)}
+  appTitle={`${program.name} Counter`}
+>
   <CashierApp client:only="vue" initialProgram={program} demoLocationId={demoLocationId} isDemo={isDemo} />
 </BaseLayout>

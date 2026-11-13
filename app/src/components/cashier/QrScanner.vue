@@ -25,13 +25,13 @@ function stop() {
 onMounted(async () => {
   const Detector = (window as unknown as { BarcodeDetector?: BarcodeDetectorConstructor }).BarcodeDetector;
   if (!Detector || !navigator.mediaDevices?.getUserMedia) {
-    emit('unavailable', 'This browser cannot scan codes. Type the card code instead.');
+    emit('unavailable', 'This browser cannot scan codes. Type the customer code instead.');
     return;
   }
   try {
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
   } catch {
-    emit('unavailable', 'Camera permission was denied. Type the card code instead.');
+    emit('unavailable', 'Camera permission was denied. Type the customer code instead.');
     return;
   }
   if (!video.value) return;

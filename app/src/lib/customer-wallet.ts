@@ -3,15 +3,15 @@ import { createRecoveryKey, createWallet as createStored, importWallet, loadWall
 import { dollarsToBaseUnits } from './format';
 import { fairlyContract, getPass, tusdcContract } from './near';
 
-const STORAGE_KEY = 'fairly.customer.key';
+export const CUSTOMER_STORAGE_KEY = 'fairly.customer.key';
 const ONE_YOCTO = 1n;
 const CALL_GAS = 50_000_000_000_000n;
 
 export type CustomerWallet = BrowserWallet;
 
-export const loadWallet = () => loadStored(STORAGE_KEY);
-export const createWallet = () => createStored(STORAGE_KEY);
-export const restoreWallet = (secretKey: string) => importWallet(STORAGE_KEY, secretKey);
+export const loadWallet = () => loadStored(CUSTOMER_STORAGE_KEY);
+export const createWallet = () => createStored(CUSTOMER_STORAGE_KEY);
+export const restoreWallet = (secretKey: string) => importWallet(CUSTOMER_STORAGE_KEY, secretKey);
 export const backupKey = (wallet: CustomerWallet) => createRecoveryKey(wallet);
 
 const callFairly = <T>(wallet: CustomerWallet, methodName: string, args: Record<string, unknown>, deposit = 0n) =>

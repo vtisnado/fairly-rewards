@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import WalletApp from '../../components/wallet/WalletApp.vue';
+import { manifestUrl } from '../../lib/manifest';
+import { PUBLIC_DEMO_PROGRAM_SLUG } from 'astro:env/client';
+---
+
+<BaseLayout title="Wallet" description="Every Fairly card you own, with the money inside." noindex manifest={manifestUrl('wallet')} appTitle="Fairly">
+  <WalletApp client:only="vue" initialSlug={null} demoSlug={PUBLIC_DEMO_PROGRAM_SLUG} />
+</BaseLayout>

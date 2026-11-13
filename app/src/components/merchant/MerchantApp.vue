@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import ToastStack from '../ui/ToastStack.vue';
+import InstallPrompt from '../ui/InstallPrompt.vue';
+import ShortcutCodeEntry from '../ui/ShortcutCodeEntry.vue';
+import ShortcutConnect from '../ui/ShortcutConnect.vue';
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import AppIcon from '../ui/AppIcon.vue';
 import InfoTip from '../ui/InfoTip.vue';
@@ -21,6 +24,7 @@ import {
   actionError,
   demoActions,
   loadMerchant,
+  MERCHANT_STORAGE_KEY,
   merchantBackupKey,
   loadManager,
   managerActions,
@@ -29,7 +33,9 @@ import {
   type MerchantActions,
 } from '../../lib/merchant-actions';
 import { shortAddress, type Place } from '../../lib/geocoding';
-import { lookupPairing } from '../../lib/pairing';
+import { lookupPairing, pairingStorageKey } from '../../lib/pairing';
+import { installModeNow, isStandalone } from '../../lib/install';
+import type { BrowserWallet } from '../../lib/browser-wallet';
 import { linkEmail, nearAuthAvailable, nearAuthMessage } from '../../lib/near-auth';
 import { offsetLabel } from '../../lib/timezone';
 import { showToast, type ToastKind } from '../../lib/toast';
@@ -100,6 +106,11 @@ const savingLocation = ref(false);
 const locationError = ref('');
 const actions = shallowRef<MerchantActions>(readOnlyActions());
 const isOwner = ref(false);
+const signerWallet = shallowRef<BrowserWallet | null>(null);
+const connectScreen = ref(false);
+const installPrompt = ref<InstanceType<typeof InstallPrompt> | null>(null);
+const installContext = `dashboard:${props.initialProgram.slug}`;
+const connectNote = 'On iPhone the home screen app starts empty. You connect it once with a code: open the dashboard in Safari, go to Settings and choose Connect home screen app.';
 const managerAccount = ref<string | null>(null);
 const invite = ref<{ locationId: string | null; code: string; busy: boolean; error: string } | null>(null);
 const removingManager = ref<string | null>(null);
@@ -375,6 +386,22 @@ async function togglePause() {
   pausing.value = false;
 }
 
+async function openConnectedShortcut(accountId: string, adopt: (storageName: string) => Promise<BrowserWallet>) {
+  const slug = program.value.slug;
+  const storageName =
+    accountId === program.value.owner
+      ? MERCHANT_STORAGE_KEY
+      : program.value.managers.some((entry) => entry.account_id === accountId)
+        ? pairingStorageKey('manager', slug)
+        : null;
+  if (!storageName) {
+    showToast('error', 'Could not connect the shortcut', 'That account is not the owner or a manager of this business.');
+    return;
+  }
+  await adopt(storageName);
+  window.location.reload();
+}
+
 async function connectDevice() {
   const form = pairing.value;
   if (!form) return;
@@ -607,6 +634,8 @@ onMounted(async () => {
   if (isOwner.value && owner) actions.value = ownerActions(owner, program.value.slug);
   else if (manager && program.value.managers.some((entry) => entry.account_id === manager.accountId)) actions.value = managerActions(manager, program.value.slug);
   else actions.value = props.isDemo ? demoActions(program.value.slug) : readOnlyActions();
+  signerWallet.value = isOwner.value ? owner : manager;
+  connectScreen.value = isStandalone() && !props.isDemo && actions.value.role === 'viewer';
   const params = new URLSearchParams(window.location.search);
   if (params.has('launched')) {
     launched.value = true;
@@ -630,6 +659,19 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex min-h-[calc(100dvh-1.75rem)]" :style="{ '--brand': brand }">
+    <div v-if="connectScreen" class="fixed inset-0 z-50 flex overflow-auto bg-bo-bg">
+      <ShortcutConnect
+        :slug="program.slug"
+        context="merchant"
+        :app-name="program.name"
+        place="dashboard"
+        skip-label="Just look around (view only)"
+        @connected="openConnectedShortcut"
+        @skip="connectScreen = false"
+      >
+        <template #alternatives><a href="/business" class="underline underline-offset-4">Restore from a backup file or email</a></template>
+      </ShortcutConnect>
+    </div>
     <aside
       class="sticky top-7 z-30 flex h-[calc(100dvh-1.75rem)] shrink-0 flex-col border-r border-bo-line bg-white transition-all duration-300 print:hidden"
       :class="collapsed ? 'w-[68px]' : 'w-64'"
@@ -1206,6 +1248,27 @@ onBeforeUnmount(() => {
               </li>
             </ul>
           </div>
+          <div class="p-6">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <p class="font-bold">Home screen</p>
+                <p class="text-sm text-bo-muted">Open this dashboard from an icon on your phone, with the Fairly logo and {{ program.name }} name.</p>
+              </div>
+              <button
+                v-if="installModeNow !== 'none'"
+                type="button"
+                class="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-bo-line px-4 text-sm font-semibold transition hover:bg-bo-bg"
+                @click="installPrompt?.open()"
+              >
+                <AppIcon name="addSquare" class="size-4" />Add to home screen
+              </button>
+            </div>
+            <div v-if="signerWallet" class="mt-4 rounded-lg border border-bo-line p-4">
+              <p class="font-semibold">Connect home screen app</p>
+              <p class="mb-3 text-sm text-bo-muted">On iPhone the home screen app starts empty. Open it, read its code and type it here.</p>
+              <ShortcutCodeEntry :slug="program.slug" :wallet="signerWallet" />
+            </div>
+          </div>
           <div class="flex items-center justify-between gap-4 p-6">
             <div><p class="font-bold">Time zone</p><p class="text-sm text-bo-muted">Daily limits reset and boosts start at midnight in this time zone.</p></div>
             <span class="font-mono text-sm font-bold">{{ offsetLabel(program.utc_offset_minutes) }}</span>
@@ -1490,6 +1553,7 @@ onBeforeUnmount(() => {
     </div>
 
 
+    <InstallPrompt ref="installPrompt" :context="installContext" :app-name="`${program.name} Dashboard`" :connect-note="connectNote" :auto="!loading && !connectScreen" />
     <ToastStack />
   </div>
 </template>

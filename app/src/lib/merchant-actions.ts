@@ -5,7 +5,7 @@ import { dollarsToBaseUnits } from './format';
 import { fairlyContract, provider, tusdcContract } from './near';
 import type { BoostSchedule } from './types';
 
-const STORAGE_KEY = 'fairly.merchant.key';
+export const MERCHANT_STORAGE_KEY = 'fairly.merchant.key';
 const CALL_GAS = 50_000_000_000_000n;
 const TRANSFER_GAS = 100_000_000_000_000n;
 const ONE_YOCTO = 1n;
@@ -72,14 +72,14 @@ export interface MerchantActions {
   removeManager(accountId: string): Promise<void>;
 }
 
-export const loadMerchant = () => loadWallet(STORAGE_KEY);
-export const restoreMerchant = (secretKey: string) => importWallet(STORAGE_KEY, secretKey);
+export const loadMerchant = () => loadWallet(MERCHANT_STORAGE_KEY);
+export const restoreMerchant = (secretKey: string) => importWallet(MERCHANT_STORAGE_KEY, secretKey);
 export const merchantBackupKey = (wallet: BrowserWallet) => createRecoveryKey(wallet);
 
 export const loadManager = (slug: string) => loadWallet(pairingStorageKey('manager', slug));
 
 export async function ensureMerchant(): Promise<BrowserWallet> {
-  const wallet = await loadOrCreateWallet(STORAGE_KEY);
+  const wallet = await loadOrCreateWallet(MERCHANT_STORAGE_KEY);
   const response = await fetch('/api/merchant/account', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

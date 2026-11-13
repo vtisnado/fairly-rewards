@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import MarketApp from '../components/market/MarketApp.vue';
+import { manifestUrl } from '../lib/manifest';
 ---
 
-<BaseLayout title="Market" description="Loyalty cards with money already inside, for sale.">
+<BaseLayout title="Market" description="Loyalty cards with money already inside, for sale." manifest={manifestUrl('market')} appTitle="Fairly Market">
   <MarketApp client:only="vue" />
 </BaseLayout>

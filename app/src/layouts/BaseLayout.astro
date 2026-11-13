@@ -8,9 +8,11 @@ interface Props {
   surface?: 'cream' | 'backoffice' | 'ink';
   noindex?: boolean;
   jsonLd?: Record<string, unknown>[];
+  manifest?: string;
+  appTitle?: string;
 }
 
-const { title, description = 'Loyalty cards with real money inside.', surface = 'cream', noindex = false, jsonLd = [] } = Astro.props;
+const { title, description = 'Loyalty cards with real money inside.', surface = 'cream', noindex = false, jsonLd = [], manifest = '/site.webmanifest', appTitle = 'Fairly' } = Astro.props;
 const origin = (Astro.site ?? Astro.url).origin;
 const canonical = new URL(Astro.url.pathname, origin).href;
 const fullTitle = `${title} · Fairly`;
@@ -52,7 +54,11 @@ const surfaceClass = {
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
-    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="manifest" href={manifest} />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content={appTitle} />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     {jsonLd.length > 0 && <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -64,5 +70,9 @@ const surfaceClass = {
   <body class={`min-h-dvh font-sans ${surfaceClass}`}>
     <TestnetBadge />
     <slot />
+    <script>
+      import { registerServiceWorker } from '../lib/service-worker';
+      registerServiceWorker();
+    </script>
   </body>
 </html>

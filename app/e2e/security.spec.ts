@@ -16,7 +16,7 @@ test('pages send a content security policy', async ({ request }) => {
   expect(policy).not.toMatch(/script-src[^;]*unsafe-inline/);
 });
 
-test('the card key cannot be read by scripts, and a backup file restores the card in a new browser', async ({ browser }) => {
+test('onb_016_the_wallet_key_cannot_be_read_by_scripts, and a backup file restores the wallet in a new browser', async ({ browser }) => {
   const customer = await phone(browser);
   const tokenId = await joinAsCustomer(customer);
 
@@ -39,7 +39,7 @@ test('the card key cannot be read by scripts, and a backup file restores the car
 
   await customer.getByRole('button', { name: 'How it works' }).click();
   const download = customer.waitForEvent('download', { timeout: 90_000 });
-  await customer.getByRole('button', { name: /Back up my card/ }).click();
+  await customer.getByRole('button', { name: /Back up my wallet/ }).click();
   const file = await (await download).path();
   const backup = await readFile(file, 'utf8');
   expect(backup).toMatch(/Account: [0-9a-f]{64}/);
@@ -48,6 +48,6 @@ test('the card key cannot be read by scripts, and a backup file restores the car
   const newPhone = await phone(browser);
   await newPhone.goto(`/join/${DEMO_SLUG}`);
   await newPhone.locator('input[type=file]').setInputFiles({ name: 'backup.txt', mimeType: 'text/plain', buffer: Buffer.from(backup) });
-  await expect(newPhone.getByText('Use balance')).toBeVisible({ timeout: 60_000 });
+  await expect(newPhone.getByRole('button', { name: /^Open .* card$/ })).toBeVisible({ timeout: 60_000 });
   expect(await cardNumberOn(newPhone)).toBe(`${tokenId.split(':')[1]!.slice(0, 3)}-${tokenId.split(':')[1]!.slice(3)}`);
 });

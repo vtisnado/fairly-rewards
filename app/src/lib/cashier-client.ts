@@ -1,7 +1,7 @@
 import { actions } from 'near-api-js';
 import { loadWallet, relay, signMessage, type BrowserWallet } from './browser-wallet';
 import { fairlyContract } from './near';
-import type { PurchaseResult } from './types';
+import type { PassView, PurchaseResult } from './types';
 
 const CALL_GAS = 50_000_000_000_000n;
 const storageKey = (slug: string) => `fairly.device.${slug}`;
@@ -12,7 +12,16 @@ export interface HonorResult {
   perk: string | null;
 }
 
+export type CustomerLookup = { token: string } | { code: string };
+
+export interface ResolvedCustomer {
+  accountId: string;
+  code: string;
+  pass: PassView | null;
+}
+
 export interface CashierClient {
+  resolveCustomer(lookup: CustomerLookup): Promise<ResolvedCustomer>;
   issue(owner: string): Promise<string>;
   purchase(tokenId: string, amountCents: number, locationId: string, category: string | null): Promise<PurchaseResult>;
   honor(code: string): Promise<HonorResult>;
@@ -35,6 +44,7 @@ async function post<T>(path: string, body: Record<string, unknown>): Promise<T> 
 
 export function demoCashier(slug: string): CashierClient {
   return {
+    resolveCustomer: (lookup) => post<ResolvedCustomer>('/api/cashier/customer-code', { slug, ...lookup }),
     issue: async (owner) => (await post<{ tokenId: string }>('/api/cashier/issue', { slug, owner })).tokenId,
     purchase: (tokenId, amountCents, _locationId, category) => post<PurchaseResult>('/api/cashier/purchase', { slug, tokenId, amountCents, category }),
     honor: (code) => post<HonorResult>('/api/cashier/honor', { slug, code }),
@@ -45,6 +55,12 @@ export function deviceCashier(slug: string, device: BrowserWallet): CashierClien
   const call = <T>(method: string, args: Record<string, unknown>) =>
     relay<T>(device, fairlyContract, [actions.functionCall(method, args, CALL_GAS, 0n)]);
   return {
+    resolveCustomer: async (lookup) => {
+      const value = 'token' in lookup ? lookup.token : lookup.code;
+      const signedAt = Date.now();
+      const proof = await signMessage(device, `fairly-resolve:${slug}:${value}:${signedAt}`);
+      return post<ResolvedCustomer>('/api/cashier/customer-code', { slug, ...lookup, accountId: device.accountId, signedAt, ...proof });
+    },
     issue: (owner) => call<string>('issue_pass', { slug, owner }),
     purchase: (tokenId, amountCents, locationId, category) =>
       call<PurchaseResult>('record_purchase', { token_id: tokenId, amount_cents: amountCents, location_id: locationId, category }),

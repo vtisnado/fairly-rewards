@@ -11,6 +11,7 @@
 - **SALE-008** The UI MUST show "value inside" (balance) next to the price so buyers see what they get.
 - **SALE-009** The market at `/market` lists every active listing with card art, balance, price and savings, filters by business type and sorts by savings, value, price or level. The buy dialog shows what the buyer pays, what the seller gets and the shop's royalty. Buying creates a browser account if needed, takes test dollars from the faucet and pays with `ft_transfer_call` through the relay. The list updates live from `listed`, `listing_cancelled` and `sale` events.
 - **SALE-010** When a listed card is sold, the seller's card screen says so and shows what they received after the royalty.
+- **SALE-011** The sell action lives on the card detail inside the wallet (UI-070). It lists exactly one card (one NFT) and leaves every other card in the wallet untouched. The royalty goes to the program owner of that card, as in SALE-003. A wallet with several cards can have several active listings, one per card.
 
 ## Acceptance
 - Given royalty 5% and a Gold pass with 12 tUSDC listed at 10 tUSDC, when Juan buys it, then the merchant gets 0.50, Maria gets 9.50, and Juan owns the pass with 12 tUSDC balance.

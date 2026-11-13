@@ -17,6 +17,11 @@ export function isRateLimited(key: string, limit: number, windowMs: number): boo
   return current.count > limit * DEVELOPMENT_MULTIPLIER;
 }
 
+export function isLimitReached(key: string, limit: number): boolean {
+  const current = windows.get(key);
+  return !!current && current.resetsAt > Date.now() && current.count >= limit * DEVELOPMENT_MULTIPLIER;
+}
+
 export function clientKey(request: Request, scope: string): string {
   const ip = request.headers.get('cf-connecting-ip') ?? request.headers.get('x-forwarded-for') ?? 'local';
   return `${scope}:${ip}`;

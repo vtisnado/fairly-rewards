@@ -2,6 +2,7 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import MerchantApp from '../../../components/merchant/MerchantApp.vue';
 import { getProgram } from '../../../lib/near';
+import { manifestUrl } from '../../../lib/manifest';
 import { demoProgramSlug } from '../../../lib/server/signers';
 
 const slug = Astro.params.slug;
@@ -12,6 +13,10 @@ if (!program) {
 const joinUrl = new URL(`/join/${program.slug}`, Astro.url.origin).toString();
 ---
 
-<BaseLayout title={`${program.name} business`} description="Sales, cashback and members at a glance." surface="backoffice" noindex>
+<BaseLayout title={`${program.name} business`} description="Sales, cashback and members at a glance." surface="backoffice"
+  noindex
+  manifest={manifestUrl('dashboard', program.slug)}
+  appTitle={`${program.name} Dashboard`}
+>
   <MerchantApp client:only="vue" initialProgram={program} joinUrl={joinUrl} isDemo={program.slug === demoProgramSlug} />
 </BaseLayout>

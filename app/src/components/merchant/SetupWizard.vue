@@ -111,7 +111,7 @@ watch(slug, (value) => {
   slugState.value = 'checking';
   slugTimer = window.setTimeout(async () => {
     const existing = await getProgram(value).catch(() => null);
-    if (slug.value === value) slugState.value = existing ? 'taken' : 'free';
+    if (slug.value === value) slugState.value = existing || value === 'wallet' ? 'taken' : 'free';
   }, 400);
 });
 

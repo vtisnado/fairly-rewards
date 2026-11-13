@@ -132,6 +132,15 @@ export async function pendingWalletFor(accountId: string): Promise<{ wallet: Bro
   return { wallet: toWallet(stored), keep: (name) => writeKey(name, stored).then(() => undefined) };
 }
 
+export async function adoptWallet(fromName: string, toName: string, accountId: string): Promise<BrowserWallet> {
+  const stored = await readKey(fromName);
+  if (!stored) throw new Error('KEY_NOT_FOUND');
+  const adopted = { ...stored, accountId };
+  await writeKey(toName, adopted);
+  await withStore('readwrite', (store) => store.delete(fromName));
+  return toWallet(adopted);
+}
+
 export const loadOrCreateWallet = async (name: string) => (await loadWallet(name)) ?? createWallet(name);
 
 export function parseBackup(text: string): { accountId: string; secretKey: KeyPairString } {

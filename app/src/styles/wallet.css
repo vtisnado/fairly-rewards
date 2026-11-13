@@ -1,0 +1,106 @@
+.hi,
+.stk {
+  transition:
+    transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 240ms ease-out;
+  transition-delay: calc(var(--h) * 35ms);
+}
+
+.hi.hi-off {
+  opacity: 0;
+  transform: translateY(14px);
+  transition-duration: 160ms, 140ms;
+  transition-delay: 0ms;
+}
+
+.stk.hi-off {
+  opacity: 0;
+  transform: translateY(160px);
+  transition-duration: 220ms, 160ms;
+  transition-delay: 0ms;
+}
+
+.stk > .stk-art {
+  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.stk.is-picked {
+  opacity: 0;
+  transition: none;
+}
+
+.stk.is-landed {
+  transition: none;
+}
+
+.fade-d {
+  transition: opacity 160ms ease-out;
+}
+
+.lift {
+  transition: transform 420ms cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+
+.lift.lift-back {
+  transition-duration: 380ms;
+  transition-delay: 130ms;
+}
+
+.navx {
+  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.navx.nav-out {
+  transform: translateY(170%);
+  transition-duration: 200ms;
+}
+
+.ei {
+  opacity: 0;
+  transform: translateX(28px);
+  transition:
+    transform 130ms cubic-bezier(0.4, 0, 1, 1),
+    opacity 110ms ease-in;
+  transition-delay: calc(var(--i) * 25ms);
+}
+
+.in .ei {
+  opacity: 1;
+  transform: none;
+  transition:
+    transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 200ms ease-out;
+  transition-delay: calc(90ms + var(--i) * 45ms);
+}
+
+.is-busy .stk,
+.is-busy .hi,
+.is-busy .ei,
+.is-busy .lift,
+.is-busy .navx {
+  will-change: transform, opacity;
+}
+
+@keyframes ring {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 100;
+  }
+}
+
+.ring {
+  animation: ring 180s linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stk,
+  .hi,
+  .fade-d,
+  .lift,
+  .navx,
+  .ei {
+    transition: none !important;
+  }
+}

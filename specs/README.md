@@ -29,3 +29,4 @@ Spec-driven development (decision D-004). Behavior is defined here first; code a
 | [14-analytics.md](14-analytics.md) | ANA: business analytics | draft |
 | [15-runway.md](15-runway.md) | RUN: low and empty rewards money | draft |
 | [16-events.md](16-events.md) | EVT: event history and real-time updates | draft |
+| [17-wallet.md](17-wallet.md) | WAL: customer wallet and rotating code | implemented |

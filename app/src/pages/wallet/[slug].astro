@@ -1,0 +1,16 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import WalletApp from '../../components/wallet/WalletApp.vue';
+import { manifestUrl } from '../../lib/manifest';
+import { getProgram } from '../../lib/near';
+import { PUBLIC_DEMO_PROGRAM_SLUG } from 'astro:env/client';
+
+const program = Astro.params.slug ? await getProgram(Astro.params.slug).catch(() => null) : null;
+if (!program) {
+  return Astro.redirect('/wallet');
+}
+---
+
+<BaseLayout title={`${program.name} card`} description="Your card, with the money inside." noindex manifest={manifestUrl('wallet')} appTitle="Fairly">
+  <WalletApp client:only="vue" initialSlug={program.slug} demoSlug={PUBLIC_DEMO_PROGRAM_SLUG} />
+</BaseLayout>

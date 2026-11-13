@@ -2,8 +2,12 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppIcon from '../ui/AppIcon.vue';
 import InfoTip from '../ui/InfoTip.vue';
+import InstallPrompt from '../ui/InstallPrompt.vue';
+import ToastStack from '../ui/ToastStack.vue';
+import { installModeNow } from '../../lib/install';
 import QrScanner from './QrScanner.vue';
-import { demoCashier, deviceCashier, pairedDevice, type CashierClient } from '../../lib/cashier-client';
+import { demoCashier, deviceCashier, pairedDevice, type CashierClient, type CustomerLookup } from '../../lib/cashier-client';
+import { formatCustomerCode, normalizeCustomerCode, parseCustomerQr } from '../../lib/customer-code';
 import { formatPairingCode, localKey, requestPairing } from '../../lib/pairing';
 import type { IconName } from '../../lib/icons';
 import type { PassView, ProgramView, PurchaseResult } from '../../lib/types';
@@ -18,7 +22,7 @@ import {
   type HonoredCodeRow,
 } from '../../lib/realtime';
 
-type Step = 'scan' | 'amount' | 'done';
+type Step = 'scan' | 'nocard' | 'amount' | 'done';
 type Mode = 'buy' | 'code';
 
 interface WaitingCode {
@@ -39,7 +43,7 @@ const CATEGORIES: [string, IconName][] = [
 const BUY_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', 'del'];
 const CODE_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '0', 'del'];
 const GUIDE = [
-  { title: 'Scan the code', text: 'The customer shows a code on their phone.', where: 'Camera area, or type the card code', icon: 'qr' as IconName },
+  { title: 'Scan the code', text: 'The customer shows a code on their phone.', where: 'Camera area, or type the customer code', icon: 'qr' as IconName },
   { title: 'Type the total', text: 'Optionally tag what they bought.', where: 'Keypad on the right (bottom on phones)', icon: 'tag' as IconName },
   { title: 'Tap Add to card', text: 'Cashback goes to their card instantly.', where: 'Coral button under the keypad', icon: 'check' as IconName },
 ];
@@ -53,6 +57,9 @@ const cents = ref(0);
 const category = ref<string | null>(null);
 const code = ref('');
 const typedCard = ref('');
+const customerCode = ref('');
+const foundCode = ref('');
+const unissuedOwner = ref<string | null>(null);
 const camera = ref(false);
 const cameraNote = ref('');
 const busy = ref(false);
@@ -63,6 +70,9 @@ const recentCards = ref<string[]>([]);
 const waitingCodes = ref<WaitingCode[]>([]);
 const connection = ref<ConnectionState>('connecting');
 const guide = ref(0);
+const installPrompt = ref<InstanceType<typeof InstallPrompt> | null>(null);
+const installContext = `counter:${props.initialProgram.slug}`;
+const connectNote = 'On iPhone the home screen app has its own device key. Connect it from the dashboard under Counter devices, with the code it shows.';
 const unsubscribers: (() => void)[] = [];
 
 const client = ref<CashierClient | null>(null);
@@ -127,7 +137,8 @@ function fail(cause: unknown) {
   error.value = {
     DAILY_CAP: 'Daily cashback limit reached at this location.',
     PAUSED: 'This program is paused.',
-    CODE_NOT_FOUND: 'Code not found. Check it with the customer.',
+    CODE_NOT_FOUND: 'Code not found or expired. Ask the customer to show it again.',
+    RATE_LIMITED: 'Too many tries. Wait a minute and try again.',
     ALREADY_HONORED: 'This code was already used.',
     INVALID_CODE: 'That does not look like a balance code.',
     ALREADY_HAS_PASS: 'This customer already has a card.',
@@ -136,10 +147,68 @@ function fail(cause: unknown) {
 }
 
 
+async function resolveCustomer(lookup: CustomerLookup) {
+  error.value = '';
+  camera.value = false;
+  busy.value = true;
+  try {
+    const resolved = await client.value!.resolveCustomer(lookup);
+    foundCode.value = formatCustomerCode(resolved.code);
+    pass.value = resolved.pass;
+    newOwner.value = null;
+    unissuedOwner.value = resolved.pass ? null : resolved.accountId;
+    step.value = resolved.pass ? 'amount' : 'nocard';
+    mode.value = 'buy';
+  } catch (cause) {
+    fail(cause);
+  } finally {
+    busy.value = false;
+  }
+}
+
+function findByCustomerCode() {
+  const code = normalizeCustomerCode(customerCode.value);
+  if (!code) {
+    fail(new Error('CODE_NOT_FOUND'));
+    return;
+  }
+  void resolveCustomer({ code });
+}
+
+function formatTypedCustomerCode(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const compact = input.value.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 6);
+  customerCode.value = compact.length > 3 ? `${compact.slice(0, 3)}-${compact.slice(3)}` : compact;
+  input.value = customerCode.value;
+}
+
+async function issueCard() {
+  if (!unissuedOwner.value || busy.value) return;
+  busy.value = true;
+  error.value = '';
+  try {
+    const tokenId = await client.value!.issue(unissuedOwner.value);
+    const issued = await getPass(tokenId);
+    if (!issued) throw new Error('CARD_NOT_FOUND');
+    pass.value = issued;
+    unissuedOwner.value = null;
+    step.value = 'amount';
+  } catch (cause) {
+    fail(cause);
+  } finally {
+    busy.value = false;
+  }
+}
+
 async function identify(raw: string) {
   error.value = '';
   camera.value = false;
   const value = raw.trim();
+  const scannedToken = parseCustomerQr(value);
+  if (scannedToken) {
+    await resolveCustomer({ token: scannedToken });
+    return;
+  }
   const slugPrefix = `${program.value.slug}:`;
   const cardCode = value.toUpperCase().replace(/[^0-9A-Z]/g, '');
   try {
@@ -215,6 +284,9 @@ function reset() {
   cents.value = 0;
   code.value = '';
   typedCard.value = '';
+  customerCode.value = '';
+  foundCode.value = '';
+  unissuedOwner.value = null;
   category.value = null;
   error.value = '';
 }
@@ -316,6 +388,16 @@ function closeGuide() {
             </p>
           </div>
         </div>
+        <button
+          v-if="installModeNow !== 'none'"
+          type="button"
+          class="grid size-10 shrink-0 place-items-center rounded-full bg-white/10 text-white/70 hover:bg-white/15 hover:text-white"
+          title="Add to home screen"
+          aria-label="Add to home screen"
+          @click="installPrompt?.open()"
+        >
+          <AppIcon name="addSquare" class="size-5" />
+        </button>
         <div class="text-right">
           <p class="flex items-center justify-end gap-1 text-[11px] text-white/50">
             Cashback given today
@@ -349,15 +431,28 @@ function closeGuide() {
         </button>
         <p class="mt-5 text-xl font-bold">Scan the customer's code</p>
         <p v-if="cameraNote" class="mt-1 text-sm text-white/50">{{ cameraNote }}</p>
-        <form class="mt-4 flex w-full max-w-xs gap-2" @submit.prevent="identify(typedCard)">
+        <form class="mt-4 flex w-full max-w-xs gap-2" @submit.prevent="findByCustomerCode">
+          <input
+            :value="customerCode"
+            class="h-11 min-w-0 flex-1 rounded-lg bg-white/10 px-3 font-mono tracking-widest uppercase placeholder:text-white/30 focus:ring-2 focus:ring-coral focus:outline-none"
+            placeholder="ABC-123"
+            aria-label="Customer code"
+            maxlength="7"
+            autocomplete="off"
+            autocapitalize="characters"
+            @input="formatTypedCustomerCode"
+          />
+          <button class="h-11 rounded-lg bg-white/15 px-4 text-sm font-semibold hover:bg-white/25 disabled:opacity-40" :disabled="customerCode.length < 7 || busy">Find</button>
+        </form>
+        <form class="mt-2 flex w-full max-w-xs gap-2" @submit.prevent="identify(typedCard)">
           <input
             v-model="typedCard"
-            class="h-11 min-w-0 flex-1 rounded-lg bg-white/10 px-3 font-mono tracking-widest uppercase placeholder:text-white/30 focus:ring-2 focus:ring-coral focus:outline-none"
-            placeholder="Card code"
+            class="h-9 min-w-0 flex-1 rounded-lg bg-white/5 px-3 font-mono text-sm tracking-widest uppercase placeholder:text-white/30 focus:ring-2 focus:ring-coral focus:outline-none"
+            placeholder="Or a card code"
             aria-label="Card code"
             maxlength="7"
           />
-          <button class="h-11 rounded-lg bg-white/15 px-4 text-sm font-semibold hover:bg-white/25" :disabled="!typedCard">Find</button>
+          <button class="h-9 rounded-lg bg-white/10 px-3 text-xs font-semibold hover:bg-white/20" :disabled="!typedCard">Find</button>
         </form>
         <div v-if="recentCards.length" class="mt-5 w-full max-w-sm">
           <p class="text-center text-xs text-white/40">Recent cards <span class="font-mono opacity-70">(demo)</span></p>
@@ -374,8 +469,35 @@ function closeGuide() {
         </div>
       </div>
 
+      <div v-else-if="step === 'nocard'" class="flex flex-1 flex-col justify-center py-4">
+        <div class="mx-auto w-full max-w-sm lg:mx-0 lg:max-w-[420px]">
+          <p v-if="foundCode" class="flex items-center gap-2 rounded-xl border border-mint/30 bg-mint/15 px-3 py-2 text-sm font-semibold text-mint">
+            <AppIcon name="check" class="size-4" />Code {{ foundCode }} found
+          </p>
+          <div class="mt-4 rounded-xl3 border-2 border-dashed border-white/20 p-5 text-center">
+            <span class="mx-auto grid size-20 place-items-center rounded-full bg-white/10"><AppIcon name="wallet" class="size-10" /></span>
+            <p class="mt-4 text-2xl font-extrabold tracking-tight">No card yet</p>
+            <p class="mt-1 text-white/60">This customer has no {{ program.name }} card. Issue one and add the purchase.</p>
+          </div>
+          <img :src="cardArt" alt="Preview of the new card" class="mt-4 w-full rounded-[20px] opacity-90 shadow-card" />
+          <p class="mt-2 text-center text-xs text-white/50">Preview of the new card</p>
+          <button
+            class="mt-4 flex h-14 w-full items-center justify-between rounded-xl bg-coral pr-2 pl-6 text-lg font-bold text-ink transition hover:brightness-105 disabled:opacity-40"
+            :disabled="busy"
+            @click="issueCard"
+          >
+            <span>{{ busy ? 'Issuing…' : 'Issue card' }}</span>
+            <span class="grid size-10 place-items-center rounded-lg bg-ink text-coral"><AppIcon name="plus" class="size-5" /></span>
+          </button>
+          <button class="mt-2 h-12 w-full rounded-xl border border-white/15 font-semibold text-white/70 hover:bg-white/5" @click="reset">Cancel</button>
+        </div>
+      </div>
+
       <div v-else class="flex flex-1 flex-col justify-center py-4">
         <div class="mx-auto w-full max-w-sm lg:mx-0 lg:max-w-[420px]">
+          <p v-if="foundCode" class="mb-4 flex items-center gap-2 rounded-xl border border-mint/30 bg-mint/15 px-3 py-2 text-sm font-semibold text-mint">
+            <AppIcon name="check" class="size-4" />Code {{ foundCode }} found
+          </p>
           <img :src="cardArt" alt="Customer card" class="w-full animate-pop rounded-[20px] shadow-card" />
           <div class="mt-4 flex items-center gap-3">
             <span class="grid size-9 place-items-center rounded-full font-bold text-ink" :class="newOwner ? 'bg-mint' : 'bg-lilac'">
@@ -509,6 +631,8 @@ function closeGuide() {
       </div>
     </div>
   </div>
+  <InstallPrompt ref="installPrompt" :context="installContext" :app-name="`${program.name} Counter`" :connect-note="connectNote" :auto="!blocked && guide === 0" tone="dark" />
+  <ToastStack />
 </template>
 
 <style scoped>

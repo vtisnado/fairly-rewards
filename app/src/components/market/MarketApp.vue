@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import ToastStack from '../ui/ToastStack.vue';
+import InstallPrompt from '../ui/InstallPrompt.vue';
+import { installModeNow } from '../../lib/install';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import AppIcon from '../ui/AppIcon.vue';
 import SelectMenu from '../ui/SelectMenu.vue';
@@ -18,6 +20,7 @@ const programs = ref(new Map<string, ProgramView>());
 const ownedSlugs = ref(new Set<string>());
 const accountId = ref<string | null>(null);
 const loading = ref(true);
+const installPrompt = ref<InstanceType<typeof InstallPrompt> | null>(null);
 const filter = ref<number | null>(null);
 const sort = ref<Sort>('save');
 const picked = ref<ListingView | null>(null);
@@ -154,6 +157,7 @@ onBeforeUnmount(() => unsubscribers.forEach((unsubscribe) => unsubscribe()));
       <nav class="flex items-center gap-6 text-sm font-semibold">
         <a href="/" class="text-ink/55 transition hover:text-ink">Home</a>
         <a href="/business" class="text-ink/55 transition hover:text-ink">For businesses</a>
+        <button v-if="installModeNow !== 'none'" type="button" class="text-ink/55 transition hover:text-ink" @click="installPrompt?.open()">Add to home screen</button>
       </nav>
     </header>
 
@@ -260,9 +264,10 @@ onBeforeUnmount(() => unsubscribers.forEach((unsubscribe) => unsubscribe()));
         <span class="mx-auto grid size-20 place-items-center rounded-full bg-ink text-mint"><AppIcon name="check" class="size-10" /></span>
         <p class="mt-5 text-4xl font-extrabold">It is yours</p>
         <p class="mt-2">The {{ bought.program_name }} card and its {{ formatMoney(bought.balance) }} are on this phone now.</p>
-        <a :href="`/join/${bought.program_slug}`" class="mt-6 inline-flex h-14 items-center rounded-full bg-ink px-8 font-semibold text-white">Open my card</a>
+        <a :href="`/wallet/${bought.program_slug}`" class="mt-6 inline-flex h-14 items-center rounded-full bg-ink px-8 font-semibold text-white">Open my card</a>
       </div>
     </div>
+    <InstallPrompt ref="installPrompt" context="market" app-name="Fairly Market" />
     <ToastStack />
   </div>
 </template>

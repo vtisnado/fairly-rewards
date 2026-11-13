@@ -20,17 +20,44 @@ export async function desktop(browser: Browser): Promise<Page> {
 export async function joinAsCustomer(page: Page, slug = DEMO_SLUG): Promise<string> {
   await page.goto(`/join/${slug}`);
   await page.getByRole('button', { name: /Get my card/ }).click();
-  await page.getByRole('button', { name: 'Skip' }).click({ timeout: 90_000 });
+  const skip = page.getByRole('button', { name: 'Skip' });
+  await expect(skip.or(page.getByRole('button', { name: 'Later' }))).toBeVisible({ timeout: 90_000 });
+  if (await skip.isVisible()) await skip.click();
+  await expect(page).toHaveURL(/\/wallet/, { timeout: 90_000 });
   await page.getByRole('button', { name: 'Later' }).click();
-  await expect(page.getByText('Use balance')).toBeVisible({ timeout: 90_000 });
+  await expect(page.getByRole('button', { name: /^Open .* card$/ }).first()).toBeVisible({ timeout: 90_000 });
   return `${slug}:${(await cardNumberOn(page)).replace('-', '')}`;
 }
 
-export async function cardNumberOn(page: Page): Promise<string> {
-  await page.getByRole('button', { name: 'Show code' }).click();
+export async function openCardDetail(page: Page, name: string | RegExp = /^Open .* card$/) {
+  await page.getByRole('button', { name }).first().click();
+  await expect(page.getByText(/· No\. [0-9A-Z]{3}-[0-9A-Z]{3}$/)).toBeVisible();
+}
+
+export async function closeCardDetail(page: Page) {
+  await page.getByRole('button', { name: 'Back to wallet' }).click();
+  await expect(page.getByRole('button', { name: 'Back to wallet' })).toBeHidden();
+}
+
+export async function cardNumberOn(page: Page, name: string | RegExp = /^Open .* card$/): Promise<string> {
+  await openCardDetail(page, name);
   const label = await page.getByText(/· No\. [0-9A-Z]{3}-[0-9A-Z]{3}$/).innerText();
-  await page.getByRole('button', { name: 'Back' }).click();
+  await closeCardDetail(page);
   return label.split('No. ')[1]!.trim();
+}
+
+export interface ShownCode {
+  token: string;
+  code: string;
+}
+
+export async function showWalletCode(page: Page): Promise<ShownCode> {
+  const issued = page.waitForResponse((response) => response.url().endsWith('/api/customer-code') && response.ok());
+  await page.getByRole('button', { name: 'Show my code' }).click();
+  const body = (await (await issued).json()) as { token: string; code: string };
+  const typed = page.getByLabel('Typed code');
+  await expect(typed).toHaveText(`${body.code.slice(0, 3)}-${body.code.slice(3)}`);
+  return { token: body.token, code: body.code };
 }
 
 export const cardCode = (tokenId: string) => tokenId.split(':')[1]!;

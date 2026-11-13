@@ -36,3 +36,49 @@ export async function upsertRows(table: string, rows: unknown[], conflictTarget:
     throw new Error(`SUPABASE_${response.status}`);
   }
 }
+
+export async function updateRows(table: string, query: string, values: Record<string, unknown>): Promise<void> {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
+    method: 'PATCH',
+    headers: headers('return=minimal'),
+    body: JSON.stringify(values),
+  });
+  if (!response.ok) {
+    throw new Error(`SUPABASE_${response.status}`);
+  }
+}
+
+export async function deleteRows(table: string, query: string): Promise<void> {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
+    method: 'DELETE',
+    headers: headers('return=minimal'),
+  });
+  if (!response.ok) {
+    throw new Error(`SUPABASE_${response.status}`);
+  }
+}
+
+export async function tryInsertRow(table: string, row: unknown): Promise<boolean> {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: headers('return=minimal'),
+    body: JSON.stringify(row),
+  });
+  if (response.status === 409) return false;
+  if (!response.ok) {
+    throw new Error(`SUPABASE_${response.status}`);
+  }
+  return true;
+}
+
+export async function updateRowsReturning<T>(table: string, query: string, values: Record<string, unknown>): Promise<T[]> {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
+    method: 'PATCH',
+    headers: headers('return=representation'),
+    body: JSON.stringify(values),
+  });
+  if (!response.ok) {
+    throw new Error(`SUPABASE_${response.status}`);
+  }
+  return (await response.json()) as T[];
+}

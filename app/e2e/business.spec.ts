@@ -50,7 +50,7 @@ test('a business registers, connects a counter device, pauses it and adds a mana
   const managerCode = await pairingCodeOn(manager);
   await owner.getByRole('button', { name: 'Settings' }).click();
   await owner.getByRole('button', { name: 'Invite a manager' }).click();
-  await owner.getByPlaceholder('ABC-123').fill(managerCode);
+  await owner.getByRole('textbox', { name: /Code shown on the manager/ }).fill(managerCode);
   await owner.getByRole('button', { name: 'Add manager' }).click();
   await expect(owner.getByText('Manager added')).toBeVisible({ timeout: 120_000 });
   await expect(manager).toHaveURL(new RegExp(`/business/${slug}$`), { timeout: 60_000 });

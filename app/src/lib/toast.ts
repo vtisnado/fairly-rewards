@@ -35,6 +35,8 @@ const CODES: Record<string, string> = {
   LISTED: 'This card is listed for sale. Cancel the listing first.',
   ALREADY_HAS_PASS: 'You already have a card from this shop.',
   ACCOUNT_NOT_READY: 'Your new account is still being created on the network. Try again in a few seconds.',
+  PAIRING_NOT_FOUND: 'That code was not found or expired. Ask the home screen app for a new one.',
+  INVALID_SHORTCUT_CODE: 'That code was not found or expired. Ask the home screen app for a new one.',
   REQUEST_FAILED: 'The server did not answer. Check the connection and try again.',
 };
 
