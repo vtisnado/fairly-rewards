@@ -16,6 +16,7 @@ const demoLocationId = isDemo ? await cashierLocation(program.slug) : null;
 ---
 
 <BaseLayout title={`${program.name} counter`} description="Scan, type the total, add cashback." surface="ink"
+  demo={isDemo}
   noindex
   manifest={manifestUrl('counter', program.slug)}
   appTitle={`${program.name} Counter`}

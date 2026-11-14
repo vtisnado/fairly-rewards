@@ -767,7 +767,9 @@ onBeforeUnmount(() => {
 
       <section v-if="view === 'overview'">
         <div class="flex flex-wrap items-center gap-3 border-b border-bo-line px-8 py-4">
-          <h1 class="mr-auto text-2xl font-bold">Overview</h1>
+          <h1 class="text-2xl font-bold">Overview</h1>
+          <span v-if="isDemo" class="mr-auto rounded-full bg-violet-100 px-2.5 py-1 text-xs font-bold text-violet-800" data-testid="sample-data-label">Sample data</span>
+          <span v-else class="mr-auto" />
           <span class="flex items-center gap-1.5 text-xs font-semibold" :class="connection === 'live' ? 'text-[#1F9D6B]' : 'text-bo-muted'">
             <span class="size-2 rounded-full" :class="connection === 'live' ? 'animate-pulse bg-[#1F9D6B]' : 'bg-bo-muted'" />
             {{ connection === 'live' ? 'Live' : connection === 'connecting' ? 'Connecting' : 'Offline' }}

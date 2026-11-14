@@ -3,7 +3,7 @@
 > Built at NEAR HACKATHON 2026. Tracks: **NFTs That Do Something** (`nfts`), **Real-World Money** (`realworld`).
 > Testnet only. "tUSDC" is a test stablecoin, no real money is involved.
 
-Demo: <DEMO_URL> · Video: <VIDEO_URL> · Contracts: `fairly-ayxv4.testnet`, `tusdc-ayxv4.testnet`
+Demo: https://fairly.disenoapps.dev · Video: <VIDEO_URL> · Contracts: `fairly-ayxv4.testnet`, `tusdc-ayxv4.testnet`
 
 ![Landing page](docs/screenshots/landing.png)
 
@@ -19,7 +19,7 @@ Every loyalty card is an NFT on NEAR that holds its own balance:
 - Customers and merchants need no wallet extension and never see gas: the account is created in the browser and a sponsor pays the fees.
 
 ## Try the demo
-Open <DEMO_URL>. Everything runs on NEAR testnet; use two browser windows (or a phone and a laptop) to see both sides.
+Open https://fairly.disenoapps.dev. Everything runs on NEAR testnet; use two browser windows (or a phone and a laptop) to see both sides.
 
 ### 1. Customer: get a card and a counter code
 1. On the landing page tap **Get a card** and then **Get my card** → a card from the demo business "Corner Café" appears in your wallet at `/wallet`, with a 0.00 balance.
@@ -39,7 +39,7 @@ Open <DEMO_URL>. Everything runs on NEAR testnet; use two browser windows (or a 
 ![Counter](docs/screenshots/counter.png)
 
 ### 3. Business: set up in minutes
-1. Open `/business` and choose **I run a business** on the landing page (or open the demo dashboard at `/business/cafe-esquina`).
+1. Open `/business` and choose **I run a business** on the landing page (or open the demo dashboard at `/business/cafe-esquina`, which shows sample activity labeled "Sample data"; its cards and balances are real testnet data).
 2. Follow the wizard: name, web address, type, cashback, boosts, a location on the map and the starting pool.
 3. The dashboard opens with sales, customers, the cashback pool and runway. Under **Connect a device**, the counter tablet shows a short code at `/cashier/<your-slug>`; type it in the dashboard to pair the device.
 4. **Pause** the device from the dashboard → the tablet goes back to "Connect this device".

@@ -1,0 +1,186 @@
+#!/usr/bin/env node
+const DAY_MS = 86_400_000;
+const DAYS = 60;
+const CARD_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+const SAMPLE_PREFIX = 'sample-';
+const CENTS_TO_UNITS = 10_000;
+
+const args = process.argv.slice(2);
+const prod = args.includes('--prod');
+const slug = process.env.PUBLIC_DEMO_PROGRAM_SLUG || 'cafe-esquina';
+const baseUrl = (prod ? process.env.PROD_SUPABASE_URL : process.env.SUPABASE_URL || '').replace(/\/$/, '');
+const key = prod ? process.env.PROD_SUPABASE_SECRET_KEY : process.env.SUPABASE_SECRET_KEY;
+const cashier = process.env.DEMO_CASHIER_ACCOUNT_ID || 'sample-cashier.testnet';
+
+if (!baseUrl || !key) {
+  console.error(prod ? 'PROD_SUPABASE_URL and PROD_SUPABASE_SECRET_KEY are required' : 'SUPABASE_URL and SUPABASE_SECRET_KEY are required');
+  process.exit(1);
+}
+
+let state = 20261114;
+function random() {
+  state = (state * 1664525 + 1013904223) % 4294967296;
+  return state / 4294967296;
+}
+const pick = (items) => items[Math.floor(random() * items.length)];
+const between = (low, high) => low + Math.floor(random() * (high - low + 1));
+
+const headers = (prefer) => ({ apikey: key, authorization: `Bearer ${key}`, 'content-type': 'application/json', ...(prefer ? { prefer } : {}) });
+
+async function request(path, init) {
+  const response = await fetch(`${baseUrl}/rest/v1/${path}`, init);
+  if (!response.ok) throw new Error(`${init.method} ${path} failed with ${response.status}: ${await response.text()}`);
+  return response;
+}
+
+const locations = [
+  { id: 'downtown', weight: 0.65 },
+  { id: 'uptown', weight: 0.35 },
+];
+const drinks = [
+  { category: 'Coffee', cents: [280, 520], weight: 0.55 },
+  { category: 'Pastry', cents: [350, 780], weight: 0.25 },
+  { category: 'Lunch', cents: [950, 1750], weight: 0.2 },
+];
+
+function weighted(items) {
+  let roll = random();
+  for (const item of items) {
+    roll -= item.weight;
+    if (roll <= 0) return item;
+  }
+  return items[items.length - 1];
+}
+
+function cardCode(used) {
+  for (;;) {
+    let code = '';
+    for (let index = 0; index < 6; index += 1) code += CARD_ALPHABET[Math.floor(random() * CARD_ALPHABET.length)];
+    const tokenId = `${slug}:${code}`;
+    if (!used.has(tokenId)) {
+      used.add(tokenId);
+      return tokenId;
+    }
+  }
+}
+
+function build(now) {
+  const rows = [];
+  let sequence = 0;
+  const add = (kind, at, event, tokenId, accountId, signerId, data) => {
+    sequence += 1;
+    rows.push({
+      tx_hash: `${SAMPLE_PREFIX}${kind}-${String(sequence).padStart(5, '0')}`,
+      log_index: 0,
+      event,
+      program_slug: slug,
+      token_id: tokenId,
+      account_id: accountId,
+      signer_id: signerId,
+      data: { slug, ...data },
+      created_at: new Date(at).toISOString(),
+    });
+  };
+  const start = now - DAYS * DAY_MS;
+  const boostDay = (at) => new Date(at).getUTCDay() === 1;
+
+  add('fund', start + 3_600_000, 'pool_funded', null, 'sample-owner.testnet', 'sample-owner.testnet', { amount: '50000000' });
+  add('boost', start + 2 * DAY_MS, 'boost_added', null, null, 'sample-owner.testnet', { boost_id: 0 });
+  add('cashier', start + 3_600_000 * 2, 'cashier_added', null, cashier, 'sample-owner.testnet', { account_id: cashier, location_id: 'downtown' });
+
+  const used = new Set();
+  const cards = [];
+  const customerCount = 46;
+  for (let index = 0; index < customerCount; index += 1) {
+    const joined = start + Math.floor(Math.pow(random(), 1.35) * (DAYS - 1) * DAY_MS) + between(8, 19) * 3_600_000;
+    const tokenId = cardCode(used);
+    const owner = `sample-customer-${String(index + 1).padStart(2, '0')}.testnet`;
+    cards.push({ tokenId, owner, joined, visits: 0, balance: 0, loyalty: 0.25 + random() * 0.6 });
+    add('issue', joined, 'pass_issued', tokenId, owner, cashier, { token_id: tokenId, owner });
+  }
+
+  for (const card of cards) {
+    let time = card.joined + between(10, 90) * 60_000;
+    while (time < now - 3_600_000) {
+      const location = weighted(locations).id;
+      const item = weighted(drinks);
+      const cents = Math.round(between(item.cents[0], item.cents[1]) / 5) * 5;
+      const bps = 500 + (boostDay(time) ? 200 : 0);
+      const cashback = Math.floor((cents * CENTS_TO_UNITS * bps) / 10_000);
+      const pending = time > now - 4 * DAY_MS && random() < 0.3 ? cashback : 0;
+      const credited = cashback - pending;
+      card.visits += 1;
+      card.balance += credited;
+      const tierBefore = card.visits - 1 >= 6 ? 2 : card.visits - 1 >= 3 ? 1 : 0;
+      const tierAfter = card.visits >= 6 ? 2 : card.visits >= 3 ? 1 : 0;
+      add('buy', time, 'purchase', card.tokenId, card.owner, cashier, {
+        token_id: card.tokenId,
+        amount_cents: cents,
+        cashback_bps: bps,
+        cashback: String(cashback),
+        credited: String(credited),
+        pending: String(pending),
+        balance: String(card.balance),
+        location_id: location,
+        category: item.category,
+        cashier,
+      });
+      if (tierAfter > tierBefore) {
+        add('tier', time, 'tier_up', card.tokenId, card.owner, cashier, {
+          token_id: card.tokenId,
+          tier_index: tierAfter,
+          tier_name: ['Bronze', 'Silver', 'Gold'][tierAfter],
+        });
+      }
+      const gapDays = 1 + Math.floor(-Math.log(1 - random()) * (2.2 / card.loyalty));
+      time += gapDays * DAY_MS + between(-3, 3) * 3_600_000;
+    }
+    if (card.balance > 400_000 && random() < 0.35) {
+      const amount = Math.floor(card.balance * (0.4 + random() * 0.5));
+      card.balance -= amount;
+      const at = Math.min(now - 2 * 3_600_000, card.joined + between(8, 40) * DAY_MS);
+      add('redeem', at, 'redeem', card.tokenId, card.owner, cashier, {
+        token_id: card.tokenId,
+        owner: card.owner,
+        amount: String(amount),
+        balance: String(card.balance),
+        code: `${card.tokenId}#1`,
+      });
+    }
+  }
+
+  const sellers = cards.filter((card) => card.visits >= 4).slice(0, 5);
+  sellers.forEach((card, index) => {
+    const price = 800_000 + index * 450_000;
+    const royalty = Math.floor(price * 0.05);
+    const at = now - (4 + index * 9) * DAY_MS - between(1, 10) * 3_600_000;
+    add('sale', at, 'sale', card.tokenId, `sample-buyer-${index + 1}.testnet`, `sample-buyer-${index + 1}.testnet`, {
+      token_id: card.tokenId,
+      seller: card.owner,
+      buyer: `sample-buyer-${index + 1}.testnet`,
+      price: String(price),
+      royalty: String(royalty),
+      merchant: 'sample-owner.testnet',
+      balance: String(card.balance),
+    });
+  });
+
+  return rows.filter((row) => new Date(row.created_at).getTime() <= now).sort((a, b) => a.created_at.localeCompare(b.created_at));
+}
+
+async function main() {
+  const host = new URL(baseUrl).host;
+  const scope = `program_slug=eq.${encodeURIComponent(slug)}&tx_hash=like.${SAMPLE_PREFIX}*`;
+  await request(`events?${scope}`, { method: 'DELETE', headers: headers('return=minimal') });
+  const rows = build(Date.now());
+  for (let offset = 0; offset < rows.length; offset += 200) {
+    await request('events', { method: 'POST', headers: headers('return=minimal'), body: JSON.stringify(rows.slice(offset, offset + 200)) });
+  }
+  const purchases = rows.filter((row) => row.event === 'purchase').length;
+  console.log(`Seeded ${rows.length} sample events (${purchases} purchases) for ${slug} on ${host}`);
+}
+
+main().catch((error) => {
+  console.error(error.message);
+  process.exit(1);
+});

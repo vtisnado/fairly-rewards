@@ -1,0 +1,27 @@
+#!/bin/sh
+set -eu
+
+: "${PROD_APP_URL:?missing in .env}"
+: "${PROD_SUPABASE_URL:?missing in .env}"
+: "${PROD_SUPABASE_PUBLISHABLE_KEY:?missing in .env}"
+: "${CLOUDFLARE_API_TOKEN:?missing in .env}"
+: "${CLOUDFLARE_ACCOUNT_ID:?missing in .env}"
+worker="${PROD_WORKER_NAME:-fairly}"
+
+PUBLIC_APP_URL="${PROD_APP_URL}" \
+PUBLIC_SUPABASE_URL="${PROD_SUPABASE_URL}" \
+PUBLIC_SUPABASE_PUBLISHABLE_KEY="${PROD_SUPABASE_PUBLISHABLE_KEY}" \
+PUBLIC_NEAR_AUTH_ORIGINS="${PROD_NEAR_AUTH_ORIGINS:-http://localhost:3000}" \
+  pnpm -C app build
+
+node -e '
+const fs = require("node:fs");
+const file = "app/dist/server/wrangler.json";
+const config = JSON.parse(fs.readFileSync(file, "utf8"));
+config.workers_dev = false;
+config.preview_urls = false;
+fs.writeFileSync(file, JSON.stringify(config));
+'
+
+cd app
+WRANGLER_SEND_METRICS=false pnpm exec wrangler deploy --config dist/server/wrangler.json --name "${worker}"

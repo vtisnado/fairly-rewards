@@ -89,6 +89,17 @@ docker compose run --rm dev near account create-account sponsor-by-faucet-servic
 ## Supabase
 The `supabase` service runs the Supabase CLI with the host Docker socket and host networking, so it can start the Supabase containers next to ours. Migrations live in `supabase/migrations`. After `start`, copy the publishable and secret keys it prints into `.env`.
 
+## Production deploy
+Production runs on Cloudflare Workers at https://fairly.disenoapps.dev with a hosted Supabase project. The `PROD_*`, `SUPABASE_*` and `CLOUDFLARE_*` values live in `.env`.
+
+| Step | Command |
+|---|---|
+| Apply migrations (IPv4 session pooler) | `docker compose run --rm supabase db push --db-url "postgresql://postgres.<ref>:<db password>@aws-1-us-east-1.pooler.supabase.com:5432/postgres"` |
+| Build and deploy the Worker (`workers.dev` URL stays off) | `set -a; . ./.env; set +a; timeout 900 docker compose run --rm -e PROD_APP_URL -e PROD_SUPABASE_URL -e PROD_SUPABASE_PUBLISHABLE_KEY -e CLOUDFLARE_API_TOKEN -e CLOUDFLARE_ACCOUNT_ID --entrypoint sh dev -c ./scripts/deploy-app` |
+| Server secrets | `wrangler secret bulk --name fairly` with the sponsor, demo and Supabase server values |
+| Sample data for the demo dashboard | `docker compose run --rm dev node scripts/seed-demo-events --prod` |
+| Check the live site | `./scripts/smoke https://fairly.disenoapps.dev` (see Smoke test) |
+
 ## Secrets
 Copy `.env.example` to `.env` and fill in testnet values. Never commit `.env` or key files. NEAR CLI credentials live in the `near-credentials` Docker volume, not in the repo.
 

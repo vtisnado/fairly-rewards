@@ -10,13 +10,15 @@ const program = slug ? await getProgram(slug).catch(() => null) : null;
 if (!program) {
   return Astro.redirect('/404');
 }
+const isDemo = program.slug === demoProgramSlug;
 const joinUrl = new URL(`/join/${program.slug}`, Astro.url.origin).toString();
 ---
 
 <BaseLayout title={`${program.name} business`} description="Sales, cashback and members at a glance." surface="backoffice"
+  demo={isDemo}
   noindex
   manifest={manifestUrl('dashboard', program.slug)}
   appTitle={`${program.name} Dashboard`}
 >
-  <MerchantApp client:only="vue" initialProgram={program} joinUrl={joinUrl} isDemo={program.slug === demoProgramSlug} />
+  <MerchantApp client:only="vue" initialProgram={program} joinUrl={joinUrl} isDemo={isDemo} />
 </BaseLayout>
