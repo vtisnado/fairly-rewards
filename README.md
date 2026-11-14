@@ -3,7 +3,7 @@
 > Built at NEAR HACKATHON 2026. Tracks: **NFTs That Do Something** (`nfts`), **Real-World Money** (`realworld`).
 > Testnet only. "tUSDC" is a test stablecoin, no real money is involved.
 
-Demo: https://fairly.disenoapps.dev · Video: <VIDEO_URL> · Contracts: `fairly-ayxv4.testnet`, `tusdc-ayxv4.testnet`
+Demo: https://fairly.disenoapps.dev · Video: [teaser on X](https://x.com/tisnadocom/status/2121745885763862815) ([MP4](docs/media/fairly-teaser.mp4)) · Contracts: `fairly-ayxv4.testnet`, `tusdc-ayxv4.testnet`
 
 ![Landing page](docs/screenshots/landing.png)
 
