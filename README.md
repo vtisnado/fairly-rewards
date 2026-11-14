@@ -1,11 +1,31 @@
+<div align="center">
+
 # Fairly: loyalty cards that hold real value
 
-> Built at NEAR HACKATHON 2026. Tracks: **NFTs That Do Something** (`nfts`), **Real-World Money** (`realworld`).
-> Testnet only. "tUSDC" is a test stablecoin, no real money is involved.
+**Cashback cards as NEAR NFTs. Spend the balance in the shop or sell the card. No wallet, no gas.**
 
-Demo: https://fairly.disenoapps.dev · Video: [teaser on X](https://x.com/tisnadocom/status/2121745885763862815) ([MP4](docs/media/fairly-teaser.mp4)) · Contracts: `fairly-ayxv4.testnet`, `tusdc-ayxv4.testnet`
+[![Live demo](https://img.shields.io/badge/Live%20demo-fairly.disenoapps.dev-F2694F?style=for-the-badge)](https://fairly.disenoapps.dev/demo)
+[![Teaser video](https://img.shields.io/badge/Teaser-Watch%20on%20X-141416?style=for-the-badge&logo=x)](https://x.com/tisnadocom/status/2121745885763862815)
+[![Tests](https://img.shields.io/badge/tests-68%20contract%20%C2%B7%2032%20browser%20E2E-2E7D32?style=for-the-badge)](#test-coverage)
+[![NEAR testnet](https://img.shields.io/badge/NEAR-testnet-FFD34E?style=for-the-badge)](https://testnet.nearblocks.io/address/fairly-ayxv4.testnet)
 
-![Landing page](docs/screenshots/landing.png)
+Built at **NEAR HACKATHON 2026** · Tracks: **NFTs That Do Something** (`nfts`), **Real-World Money** (`realworld`)
+
+[![Watch the teaser](docs/media/teaser-poster.jpg)](https://x.com/tisnadocom/status/2121745885763862815)
+
+<sub>Click the image to watch the 30-second teaser on X, or download the [MP4](docs/media/fairly-teaser.mp4).</sub>
+
+</div>
+
+> Testnet only. "tUSDC" is a test stablecoin, no real money is involved. Contracts: `fairly-ayxv4.testnet`, `tusdc-ayxv4.testnet`.
+
+## Screens
+
+| Customer wallet | One rotating code | Counter |
+|---|---|---|
+| ![Wallet](docs/screenshots/wallet.png) | ![Code](docs/screenshots/code.png) | ![Counter](docs/screenshots/counter.png) |
+| **Level up** | **Market resale** | **Business dashboard** |
+| ![Level up](docs/screenshots/level-up.png) | ![Market](docs/screenshots/market.png) | ![Dashboard](docs/screenshots/dashboard.png) |
 
 ## The problem
 Paper stamp cards and closed loyalty apps give customers points that are rarely redeemed, expire, and are worth nothing outside the store. Small merchants cannot afford loyalty platforms.
@@ -141,7 +161,7 @@ Fill `.env` with testnet accounts and the Supabase keys first (names only are in
 | Layer | Count | What it covers |
 |---|---|---|
 | Contract unit tests (Rust, `cargo test`) | 68 (64 `fairly`, 4 `tusdc`) | Programs, cashiers and managers, passes and tiers, purchases and cashback, daily caps, boosts, redeem and perks, resale and royalties, expiry, events |
-| Browser E2E (Playwright in Docker, real testnet) | 29 tests (28 run on the dev server, 1 checks the content security policy on a production build) | Customer join, wallet and rotating code, counter lookup and purchase, balance codes, issue a card on the spot, business setup, device pairing and pause, manager invite, resale with royalty, non-extractable keys and backup restore, home screen shortcuts, service worker, intro slides and level-up |
+| Browser E2E (Playwright in Docker, real testnet) | 32 tests (1 checks the content security policy and only runs on a production build) | Customer join, wallet and rotating code, counter lookup and purchase, balance codes, issue a card on the spot, business setup, device pairing and pause, manager invite, resale with royalty, non-extractable keys and backup restore, home screen shortcuts, service worker, intro slides and level-up, post-pay pending cashback and settlement, demo banner |
 | Smoke script | 1 script | Routes, manifest, RPC view call, CSP (`scripts/smoke`) |
 | Type check | `astro check` | Astro, Vue and TypeScript files including the E2E specs |
 
