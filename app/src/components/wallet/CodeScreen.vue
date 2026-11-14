@@ -16,6 +16,7 @@ const token = ref('');
 const code = ref('');
 const left = ref(CODE_TTL_SECONDS);
 const offline = ref(false);
+const failure = ref('');
 const fetching = ref(false);
 const ring = ref<SVGRectElement | null>(null);
 
@@ -57,8 +58,9 @@ async function rotate() {
     left.value = issued.expiresInSeconds;
     offline.value = false;
     syncRing();
-  } catch {
+  } catch (cause) {
     if (mine !== generation) return;
+    failure.value = navigator.onLine && cause instanceof Error ? cause.message : '';
     offline.value = true;
     clearTimeout(retryTimer);
     retryTimer = setTimeout(() => {
@@ -154,7 +156,7 @@ onBeforeUnmount(() => {
       <p class="text-sm text-white/50">Or tell the cashier</p>
       <p class="mt-1 text-5xl font-extrabold tracking-[.12em] tabular-nums" aria-label="Typed code">{{ typedCode || '···-···' }}</p>
       <p v-if="offline" class="mt-3 px-2 text-sm font-semibold text-sun" role="status">
-        You are offline. {{ expired ? 'This code ran out.' : 'This code works until the timer ends.' }}
+        {{ failure ? `Could not get a new code (${failure}). Retrying…` : 'You are offline.' }} {{ expired ? 'This code ran out.' : 'This code works until the timer ends.' }}
         <button v-if="expired" class="underline underline-offset-4" @click="refreshNow">Refresh</button>
       </p>
       <p v-else class="mt-3 px-2 text-sm text-white/60">

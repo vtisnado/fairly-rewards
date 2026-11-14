@@ -11,9 +11,10 @@ interface Props {
   manifest?: string;
   appTitle?: string;
   demo?: boolean;
+  demoLabel?: string;
 }
 
-const { title, description = 'Loyalty cards with real money inside.', surface = 'cream', noindex = false, jsonLd = [], manifest = '/site.webmanifest', appTitle = 'Fairly', demo = false } = Astro.props;
+const { title, description = 'Loyalty cards with real money inside.', surface = 'cream', noindex = false, jsonLd = [], manifest = '/site.webmanifest', appTitle = 'Fairly', demo = false, demoLabel } = Astro.props;
 const origin = (Astro.site ?? Astro.url).origin;
 const canonical = new URL(Astro.url.pathname, origin).href;
 const fullTitle = `${title} · Fairly`;
@@ -69,7 +70,7 @@ const surfaceClass = {
     />
   </head>
   <body class={`min-h-dvh font-sans ${surfaceClass}`}>
-    <TestnetBadge demo={demo} />
+    <TestnetBadge demo={demo} demoLabel={demoLabel} />
     <slot />
     <script>
       import { registerServiceWorker } from '../lib/service-worker';

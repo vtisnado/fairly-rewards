@@ -150,14 +150,14 @@ onBeforeUnmount(() => unsubscribers.forEach((unsubscribe) => unsubscribe()));
 
 <template>
   <div>
-    <header class="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-      <a href="/" class="flex items-center gap-2 text-2xl font-extrabold tracking-tight">
+    <header class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 md:h-20 md:py-0">
+      <a href="/" class="flex shrink-0 items-center gap-2 text-xl font-extrabold tracking-tight md:text-2xl">
         <span class="grid size-8 place-items-center rounded-full bg-coral text-sm font-black">F</span>Fairly
       </a>
-      <nav class="flex items-center gap-6 text-sm font-semibold">
-        <a href="/" class="text-ink/55 transition hover:text-ink">Home</a>
-        <a href="/business" class="text-ink/55 transition hover:text-ink">For businesses</a>
-        <button v-if="installModeNow !== 'none'" type="button" class="text-ink/55 transition hover:text-ink" @click="installPrompt?.open()">Add to home screen</button>
+      <nav class="-mr-4 flex min-w-0 items-center gap-2 overflow-x-auto whitespace-nowrap pr-4 text-sm font-semibold [scrollbar-width:none] sm:mr-0 sm:pr-0 md:gap-3 [&::-webkit-scrollbar]:hidden" aria-label="Main">
+        <a href="/demo" class="shrink-0 rounded-full bg-violet-100 px-3 py-1.5 text-violet-800 transition hover:bg-violet-200">Demo</a>
+        <a href="/business/new" class="shrink-0 rounded-full px-3 py-1.5 text-ink/65 transition hover:text-ink">Start your business</a>
+        <button v-if="installModeNow !== 'none'" type="button" class="shrink-0 rounded-full px-3 py-1.5 text-ink/65 transition hover:text-ink" @click="installPrompt?.open()">Add to home screen</button>
       </nav>
     </header>
 

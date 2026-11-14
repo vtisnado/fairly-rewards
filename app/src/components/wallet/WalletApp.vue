@@ -599,7 +599,7 @@ onBeforeUnmount(() => {
 
           <div v-if="passes.length" class="hi mt-6 flex items-center justify-between" style="--h: 2" :class="detail && !homeShow && 'hi-off'">
             <h2 class="text-xl font-bold">Cards</h2>
-            <div class="relative w-44">
+            <div v-if="passes.length > 1" class="relative w-44">
               <button
                 class="flex h-10 w-full items-center justify-between rounded-xl border bg-white px-3 text-sm font-semibold text-ink transition"
                 :class="sortOpen ? 'border-ink' : 'border-ink/10 hover:border-ink/40'"

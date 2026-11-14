@@ -1,0 +1,49 @@
+---
+import '../styles/landing.css';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { ICONS } from '../lib/icons';
+
+const steps = [
+  { href: '/join/cafe-esquina', title: 'Get a card at Cafe Esquina', cta: 'Get my card', sees: 'Your wallet opens with the card.' },
+  { href: '/cashier/cafe-esquina', title: 'Open the demo counter', cta: 'Open the counter', sees: 'Scan or type your wallet code and record a purchase. Tip: use a second device or tab.' },
+  { href: '/business/cafe-esquina', title: 'See the sample business dashboard', cta: 'Open the dashboard', sees: '60 days of sample data.' },
+  { href: '/market', title: 'Sell your card on the market', cta: 'Open the market', sees: 'Your card listed for sale, with its balance and level.' },
+];
+---
+
+<BaseLayout
+  title="Quick demo"
+  description="Try Fairly in five minutes: get a card, record a purchase, see the dashboard and sell your card."
+  demo
+  demoLabel="Demo café · sample data · test money"
+>
+  <div class="min-h-screen bg-cream text-ink">
+    <header class="mx-auto flex max-w-3xl items-center justify-between px-6 py-5">
+      <a href="/" class="flex items-center gap-2 text-2xl font-extrabold tracking-tight">
+        <span class="grid size-8 place-items-center rounded-full bg-coral text-sm font-black">F</span>Fairly
+      </a>
+      <a href="/business/new" class="text-sm font-semibold text-ink/65 transition hover:text-ink">Start your business</a>
+    </header>
+    <main class="mx-auto max-w-3xl px-6 pb-20 pt-6">
+      <p class="font-bold text-coral-dark">Quick demo · 5 minutes</p>
+      <h1 class="mt-3 text-5xl font-black leading-[.95] tracking-tight md:text-6xl">Try every side of Fairly</h1>
+      <p class="mt-5 text-xl text-ink/70">Follow the four steps in order. Each one opens a real screen.</p>
+      <ol class="mt-10 space-y-4">
+        {steps.map((step, index) => (
+          <li class="flex gap-5 rounded-xl3 border border-ink/5 bg-white p-6 shadow-soft" data-demo-step={index + 1}>
+            <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-ink text-2xl font-black text-coral">{index + 1}</span>
+            <div class="min-w-0">
+              <h2 class="text-2xl font-extrabold">{step.title}</h2>
+              <p class="mt-2 text-ink/70"><b>You will see:</b> {step.sees}</p>
+              <a href={step.href} class="btn-arrow mt-4 inline-flex h-12 items-center gap-3 rounded-xl bg-coral pl-5 pr-1.5 font-bold text-ink transition hover:bg-[#f47661]">
+                {step.cta}
+                <span class="arr grid size-9 place-items-center rounded-lg bg-ink text-coral"><svg viewBox="0 0 24 24" class="size-5" aria-hidden="true" set:html={ICONS.arrow} /></span>
+              </a>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p class="mt-8 rounded-xl bg-violet-100 p-4 text-sm text-violet-900">The café, its dashboard and its counter are shared demo accounts. Your card and your market listing are real testnet NFTs.</p>
+    </main>
+  </div>
+</BaseLayout>

@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 
 export const prerender = true;
 
-const PUBLIC_PATHS = ['/', '/market', '/business'];
+const PUBLIC_PATHS = ['/', '/demo', '/market', '/business'];
 
 export const GET: APIRoute = ({ site, url }) => {
   const origin = (site ?? url).origin;

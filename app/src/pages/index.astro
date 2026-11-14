@@ -73,11 +73,16 @@ const businessPoints = [
   { icon: 'chart', color: 'text-mint', title: 'See the sales loyalty brings.', text: 'A real-time dashboard with managers who can help run it.' },
 ];
 
-const tryLinks = [
-  { href: '/join/cafe-esquina', label: 'Customer' },
-  { href: '/cashier/cafe-esquina', label: 'Counter' },
-  { href: '/business/cafe-esquina', label: 'Business' },
+const useLinks = [
+  { href: '/demo', label: 'Demo' },
+  { href: '/business/new', label: 'Start your business' },
   { href: '/market', label: 'Market' },
+];
+
+const realSteps = [
+  { href: '/business/new', title: 'Register your business', text: 'Name, cashback and a starting pool, in a few minutes.', cta: 'Start your business' },
+  { href: '', title: 'Connect your counter', text: 'Pair a phone or tablet from your dashboard with a short code.', cta: '' },
+  { href: '', title: 'Your customers scan your QR and get your card', text: 'Every card holds cashback and can be resold for a royalty.', cta: '' },
 ];
 
 const ctaPrimary =
@@ -104,7 +109,7 @@ const eyebrow = 'font-bold text-coral-dark';
         <nav aria-label="Main" class="hidden gap-8 font-semibold md:flex">
           {NAV_LINKS.map((link) => <a href={link.href} class="nav-link text-ink/70 hover:text-ink">{link.label}</a>)}
         </nav>
-        <a href="/join/cafe-esquina" class="btn-arrow flex h-12 items-center gap-3 rounded-xl bg-ink pl-5 pr-1.5 font-semibold text-white transition hover:bg-black hover:shadow-card">
+        <a href="/demo" class="btn-arrow flex h-12 items-center gap-3 rounded-xl bg-ink pl-5 pr-1.5 font-semibold text-white transition hover:bg-black hover:shadow-card">
           Try the demo
           <span class="arr grid size-9 place-items-center rounded-lg bg-coral text-ink">
             <svg viewBox="0 0 24 24" class="size-5" aria-hidden="true" set:html={ICONS.arrow} />
@@ -131,13 +136,13 @@ const eyebrow = 'font-bold text-coral-dark';
               A members card that holds cashback, not points. Your regulars spend it at your counter or pass the card on, and you earn on every resale.
             </p>
             <div class="animate-enter mt-10 flex flex-wrap gap-3" style="animation-delay:.45s">
-              <a href="/join/cafe-esquina" class={ctaPrimary}>
-                Get a card
+              <a href="/demo" class={ctaPrimary}>
+                Try the 5-minute demo
                 <span class={arrowBox}><svg viewBox="0 0 24 24" class="size-6" aria-hidden="true" set:html={ICONS.arrow} /></span>
               </a>
-              <a href="/business" class={ctaGhost}>I run a business</a>
+              <a href="/business/new" class={ctaGhost}>Start your business</a>
             </div>
-            <p class="animate-enter mt-5 font-mono text-sm text-white/60" style="animation-delay:.6s">Demo on NEAR testnet, test money only.</p>
+            <p class="animate-enter mt-5 font-mono text-sm text-white/60" style="animation-delay:.6s">NEAR testnet, test money only.</p>
           </div>
 
           <div class="relative mx-auto h-[640px] w-full max-w-[420px] lg:max-w-none">
@@ -327,11 +332,11 @@ const eyebrow = 'font-bold text-coral-dark';
                 ))}
               </ul>
               <div class="mt-10 flex flex-wrap gap-3">
-                <a href="/business/cafe-esquina" class={ctaPrimary}>
-                  Open the business demo
+                <a href="/business/new" class={ctaPrimary}>
+                  Start your business
                   <span class={arrowBox}><svg viewBox="0 0 24 24" class="size-6" aria-hidden="true" set:html={ICONS.arrow} /></span>
                 </a>
-                <a href="/business" class={ctaGhost}>Register your business</a>
+                <a href="/demo" class={ctaGhost}>Try the 5-minute demo</a>
               </div>
             </div>
             <div class="reveal-right">
@@ -351,6 +356,24 @@ const eyebrow = 'font-bold text-coral-dark';
             </div>
           </div>
         </div>
+      </section>
+
+      <section id="real" class="mx-auto max-w-6xl px-6 py-20">
+        <div class="reveal max-w-2xl">
+          <p class={eyebrow}>For real, on testnet</p>
+          <h2 class={h2}>Use it for real (testnet)</h2>
+          <p class="mt-5 text-xl text-ink/70">Your own business, your own card, test money only.</p>
+        </div>
+        <ol class="mt-12 grid gap-4 md:grid-cols-3">
+          {realSteps.map((step, index) => (
+            <li class="reveal rounded-xl3 border border-ink/5 bg-white p-6" style={`animation-delay:${index * 0.08}s`}>
+              <span class="grid size-12 place-items-center rounded-xl bg-ink text-2xl font-black text-coral">{index + 1}</span>
+              <h3 class="mt-6 text-2xl font-extrabold">{step.title}</h3>
+              <p class="mt-2 text-ink/70">{step.text}</p>
+              {step.href && <a href={step.href} class="mt-5 inline-flex h-11 items-center rounded-lg bg-ink px-5 font-bold text-white transition hover:bg-black">{step.cta}</a>}
+            </li>
+          ))}
+        </ol>
       </section>
 
       <section id="near" class="mx-auto max-w-6xl px-6 py-20">
@@ -383,7 +406,7 @@ const eyebrow = 'font-bold text-coral-dark';
           <div>
             <h2 class="text-5xl font-black leading-[.92] tracking-tight md:text-7xl">Try every side of it in your browser</h2>
             <div class="mt-10 flex flex-wrap gap-3">
-              {tryLinks.map((link, index) =>
+              {useLinks.map((link, index) =>
                 index === 0 ? (
                   <a href={link.href} class={ctaPrimary}>
                     {link.label}
@@ -394,7 +417,7 @@ const eyebrow = 'font-bold text-coral-dark';
                 ),
               )}
             </div>
-            <p class="mt-5 font-mono text-sm text-white/70">Demo on NEAR testnet, test money only.</p>
+            <p class="mt-5 font-mono text-sm text-white/70">NEAR testnet, test money only.</p>
           </div>
           <div class="relative hidden h-56 lg:block" aria-hidden="true">
             <div class="absolute right-24 top-0 w-36 rotate-[10deg]"><div class="float"><img src="/img/coffee.webp" alt="" width="320" height="320" class="h-auto w-full drop-shadow-[0_22px_26px_rgba(0,0,0,.45)]" loading="lazy" /></div></div>
@@ -412,14 +435,12 @@ const eyebrow = 'font-bold text-coral-dark';
             <ul class="mt-3 space-y-2 text-white/70">
               <li><a class="transition hover:text-white" href="#how">How it works</a></li>
               <li><a class="transition hover:text-white" href="#who">Who uses it</a></li>
-              <li><a class="transition hover:text-white" href="/market">Market</a></li>
             </ul>
           </nav>
-          <nav aria-label="Try it">
-            <p class="font-bold">Try it</p>
+          <nav aria-label="Use it">
+            <p class="font-bold">Try Fairly</p>
             <ul class="mt-3 space-y-2 text-white/70">
-              {tryLinks.slice(0, 3).map((link) => <li><a class="transition hover:text-white" href={link.href}>{link.label}</a></li>)}
-              <li><a class="transition hover:text-white" href="/business">Register a business</a></li>
+              {useLinks.map((link) => <li><a class="transition hover:text-white" href={link.href}>{link.label}</a></li>)}
             </ul>
           </nav>
           <div>

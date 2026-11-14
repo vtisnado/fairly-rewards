@@ -18,11 +18,26 @@ Every loyalty card is an NFT on NEAR that holds its own balance:
 - The customer can spend the balance at the merchant or sell the card on a market. Balance and level move with it, and the merchant earns a royalty on every resale.
 - Customers and merchants need no wallet extension and never see gas: the account is created in the browser and a sponsor pays the fees.
 
-## Try the demo
-Open https://fairly.disenoapps.dev. Everything runs on NEAR testnet; use two browser windows (or a phone and a laptop) to see both sides.
+## Try it
+Production: https://fairly.disenoapps.dev. Everything runs on NEAR testnet with test money. There are two separate paths: a guided demo with shared sample data, and the real thing with your own business.
+
+### Quick demo (5 minutes)
+Start at https://fairly.disenoapps.dev/demo. The café, its dashboard and its counter are shared demo accounts; your card and your market listing are real testnet NFTs.
+1. Get a card at Cafe Esquina (`/join/cafe-esquina`) → your wallet opens with the card.
+2. Open the demo counter (`/cashier/cafe-esquina`), scan or type your wallet code and record a purchase (use a second device or tab) → your card shows the cashback.
+3. See the sample business dashboard (`/business/cafe-esquina`) → 60 days of sample data.
+4. Sell your card on the market (`/market`) → your card is listed with its balance and level.
+
+### Use it for real (testnet)
+1. Register your business at `/business/new` → your dashboard opens, with an empty pool and no sample data.
+2. Connect your counter: pair a phone or tablet from your dashboard → the device shows your counter.
+3. Your customers scan your QR and get your card → it appears in their wallet and earns cashback.
+
+## Walkthrough
+Everything runs on NEAR testnet; use two browser windows (or a phone and a laptop) to see both sides.
 
 ### 1. Customer: get a card and a counter code
-1. On the landing page tap **Get a card** and then **Get my card** → a card from the demo business "Corner Café" appears in your wallet at `/wallet`, with a 0.00 balance.
+1. Open `/join/cafe-esquina` from the quick demo and tap **Get my card** → a card from the demo business "Corner Café" appears in your wallet at `/wallet`, with a 0.00 balance.
 2. Open the card and tap **Simulate a purchase** (demo business only) a few times → the balance rises live, the tier jumps to Silver and then Gold, a full-screen level-up shows and the artwork changes.
 3. Back in the wallet tap **Show my code** → a QR and a typed code appear, rotating every three minutes and on each visit. This is what the cashier scans or types.
 
@@ -31,7 +46,7 @@ Open https://fairly.disenoapps.dev. Everything runs on NEAR testnet; use two bro
 | ![Wallet with a card](docs/screenshots/wallet.png) | ![Level-up screen](docs/screenshots/level-up.png) | ![Code screen](docs/screenshots/code.png) |
 
 ### 2. Counter: the cashier records a purchase
-1. In another window open `/cashier/cafe-esquina` (the landing page links it as "Counter").
+1. In another window open `/cashier/cafe-esquina` (step 2 of the quick demo).
 2. Type the customer's code (or scan the QR) → the customer's card appears.
 3. Enter an amount on the keypad and confirm → the customer's wallet updates live with the cashback.
 4. To spend balance, the customer taps **Use balance** on the card and reads out a balance code; the cashier types it → the discount is honored and the balance drops.
@@ -39,7 +54,7 @@ Open https://fairly.disenoapps.dev. Everything runs on NEAR testnet; use two bro
 ![Counter](docs/screenshots/counter.png)
 
 ### 3. Business: set up in minutes
-1. Open `/business` and choose **I run a business** on the landing page (or open the demo dashboard at `/business/cafe-esquina`, which shows sample activity labeled "Sample data"; its cards and balances are real testnet data).
+1. Open `/business` and choose **Start your business** on the landing page (or open the demo dashboard at `/business/cafe-esquina`, which shows sample activity labeled "Sample data"; its cards and balances are real testnet data).
 2. Follow the wizard: name, web address, type, cashback, boosts, a location on the map and the starting pool.
 3. The dashboard opens with sales, customers, the cashback pool and runway. Under **Connect a device**, the counter tablet shows a short code at `/cashier/<your-slug>`; type it in the dashboard to pair the device.
 4. **Pause** the device from the dashboard → the tablet goes back to "Connect this device".
@@ -56,7 +71,7 @@ Open https://fairly.disenoapps.dev. Everything runs on NEAR testnet; use two bro
 ### 5. Recovery with email (NEAR Auth)
 1. When the wallet offers **Keep your wallet safe**, tap **Protect with email** → approve in the NEAR Auth window.
 2. On a new browser open the wallet and choose **Recover with email** → the cards come back with their balances. Businesses do the same from Settings.
-3. In this testnet build NEAR Auth works on `http://localhost:3000`; the hosted origin needs approval from the NEAR Auth operators, so the hosted demo offers the backup file (**Back up my wallet**) instead.
+3. Email recovery runs locally on `http://localhost:3000` (see Run locally). NEAR Auth only allows approved web origins, and the hosted demo runs on a temporary domain, so it offers the backup file (**Back up my wallet**) instead. Email recovery goes live once the official domain exists and NEAR Auth approves it.
 
 ## How NEAR is used
 | What | How |
@@ -148,7 +163,7 @@ Run them with `docker compose run --rm dev sh -c "cd contracts && cargo test"` a
 - **Keys stay on the device and cannot be copied.** Customers, businesses, managers and counter devices each get their own NEAR key, created in their browser as a non-extractable WebCrypto key: the page can sign with it, but no script can read it. The server never receives a private key. A device or manager is connected by typing a short code that only carries its public account id, the same pattern TVs use to sign in.
 - **Losing a phone or clearing the browser.** Balances and history live on chain and in the event log, not on the device. A backup file holds a separate recovery key added to the account; restoring it on a new browser brings the card or business back. A lost counter device is paused from the dashboard and a new one is paired.
 - **Content security policy.** Production pages only run scripts from Fairly itself (hashed), and only talk to the NEAR RPC, Supabase and the map services.
-- **Email for account recovery.** Customers and businesses can link an email or Google login with NEAR Auth (FastAuth) so they can get back into their account on a new device. NEAR Auth's MPC network holds a second key for the account; Fairly stores only that public key and the account id, never the email. In this testnet build it works on `http://localhost:3000`; the hosted demo is waiting for the NEAR Auth team to allow its domain.
+- **Email for account recovery.** Customers and businesses can link an email or Google login with NEAR Auth (FastAuth) so they can get back into their account on a new device. NEAR Auth's MPC network holds a second key for the account; Fairly stores only that public key and the account id, never the email. In this testnet build it works on `http://localhost:3000`; on the hosted demo it is enabled once the official domain is approved by NEAR Auth.
 - **What Fairly stores off chain.** Supabase keeps a copy of public contract events (for live screens and history), used balance codes, and short-lived pairing codes. All of it is testnet data.
 
 ## Business model
