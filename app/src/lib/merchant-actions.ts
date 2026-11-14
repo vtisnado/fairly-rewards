@@ -1,5 +1,6 @@
 import { actions, nearToYocto } from 'near-api-js';
 import { createRecoveryKey, importWallet, loadOrCreateWallet, loadWallet, relay, waitForAccount, type BrowserWallet } from './browser-wallet';
+import { nearAmount } from './near-amount';
 import { pairingStorageKey } from './pairing';
 import { dollarsToBaseUnits } from './format';
 import { fairlyContract, provider, tusdcContract } from './near';
@@ -57,6 +58,7 @@ export interface MerchantActions {
   role: MerchantRole;
   canManage: boolean;
   fund(dollars: number): Promise<void>;
+  settle(pendingTotal: string): Promise<void>;
   addLocation(location: LocationInput): Promise<void>;
   updateLocation(location: LocationInput): Promise<void>;
   addBoost(boost: BoostInput): Promise<void>;
@@ -108,8 +110,9 @@ const callFairly = (wallet: BrowserWallet, method: string, args: Record<string, 
 export const createProgram = (wallet: BrowserWallet, input: ProgramInput) =>
   callFairly(wallet, 'create_program', { input }, nearToYocto(PROGRAM_DEPOSIT_NEAR));
 
-export async function fundPool(wallet: BrowserWallet, slug: string, dollars: number) {
-  const amount = dollarsToBaseUnits(dollars);
+export const fundPool = (wallet: BrowserWallet, slug: string, dollars: number) => fundPoolUnits(wallet, slug, dollarsToBaseUnits(dollars));
+
+export async function fundPoolUnits(wallet: BrowserWallet, slug: string, amount: string) {
   await relay(wallet, tusdcContract, [actions.functionCall('faucet', { amount }, CALL_GAS, 0n)]);
   await relay(wallet, tusdcContract, [
     actions.functionCall(
@@ -123,7 +126,7 @@ export async function fundPool(wallet: BrowserWallet, slug: string, dollars: num
 
 async function fundIfNew(wallet: BrowserWallet, accountId: string, amountNear: string) {
   if (await accountExists(accountId)) return;
-  await relay(wallet, accountId, [actions.transfer(nearToYocto(amountNear))]);
+  await relay(wallet, accountId, [actions.transfer(nearToYocto(nearAmount(amountNear)))]);
 }
 
 async function connectDevice(wallet: BrowserWallet, slug: string, accountId: string, locationId: string) {
@@ -136,6 +139,7 @@ export function ownerActions(wallet: BrowserWallet, slug: string): MerchantActio
     role: 'owner',
     canManage: true,
     fund: (dollars) => fundPool(wallet, slug, dollars),
+    settle: (pendingTotal) => fundPoolUnits(wallet, slug, pendingTotal),
     addLocation: async (location) => void (await callFairly(wallet, 'add_location', { slug, location })),
     updateLocation: async (location) => void (await callFairly(wallet, 'update_location', { slug, location })),
     addBoost: async (boost) => void (await callFairly(wallet, 'add_boost', { slug, boost })),
@@ -184,6 +188,7 @@ export function demoActions(slug: string): MerchantActions {
     ...readOnlyActions(),
     role: 'demo',
     fund: (dollars) => demoCall(slug, 'fund', { dollars }),
+    settle: () => demoCall(slug, 'settle', {}),
     addLocation: (location) => demoCall(slug, 'add_location', { location }),
     updateLocation: (location) => demoCall(slug, 'update_location', { location }),
     addBoost: (boost) => demoCall(slug, 'add_boost', { boost }),
@@ -197,6 +202,7 @@ export function readOnlyActions(): MerchantActions {
     role: 'viewer',
     canManage: false,
     fund: locked,
+    settle: locked,
     addLocation: locked,
     updateLocation: locked,
     addBoost: locked,
@@ -221,6 +227,7 @@ export const ACTION_ERRORS: Record<string, string> = {
   TOO_MANY_BOOSTS: 'The program already has the maximum of 10 boosts.',
   TOO_MANY_CASHIERS: 'The program already has the maximum of 20 devices.',
   INVALID_BOOST: 'Check the boost name, dates and extra cashback.',
+  NOTHING_PENDING: 'There is no pending cashback to settle.',
   INSUFFICIENT_POOL: 'That is more than the pool holds.',
   NO_STORAGE: 'The program ran out of storage deposit.',
   SLUG_TAKEN: 'That web address is taken. Pick another one.',

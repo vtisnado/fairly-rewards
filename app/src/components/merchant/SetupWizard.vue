@@ -38,7 +38,8 @@ const EXPIRY_OPTIONS = [
   { value: 365, label: '1 year' },
   { value: 0, label: 'Never' },
 ];
-const FUND_OPTIONS = [50, 100, 250];
+const MIN_FUND = 20;
+const FUND_OPTIONS = [20, 50, 100];
 const MAX_FUND = 1000;
 
 const step = ref(1);
@@ -64,7 +65,7 @@ const boostFormOpen = ref(false);
 const locations = ref<LocationInput[]>([]);
 const newLocationName = ref('');
 const newPlace = ref<Place | null>(null);
-const fund = ref(100);
+const fund = ref(MIN_FUND);
 const customFund = ref<number | null>(null);
 const working = ref(false);
 const progress = ref<string[]>([]);
@@ -93,7 +94,7 @@ const stepValid = computed(() => {
   if (step.value === 1) return name.value.trim().length > 0 && validColor.value && (editing.value || (slug.value.length >= 3 && slugState.value === 'free'));
   if (step.value === 2) return tiersValid.value && dailyCap.value > 0;
   if (step.value === 4) return locations.value.length > 0;
-  if (step.value === 5) return fundDollars.value >= 10 && fundDollars.value <= MAX_FUND;
+  if (step.value === 5) return fundDollars.value >= MIN_FUND && fundDollars.value <= MAX_FUND;
   return true;
 });
 
@@ -436,6 +437,7 @@ function next() {
           <div>
             <p class="font-semibold">Cashback pool</p>
             <p class="text-sm text-bo-muted">Cashback is paid from this balance. You can withdraw what is not used at any time.</p>
+            <p class="mt-2 rounded-lg bg-bo-bg px-3 py-2 text-sm" data-testid="start-small">Start small: cashback above your pool waits as Pending until your weekly settlement. Then you deposit what was generated and it becomes available to customers.</p>
             <div class="mt-3 grid grid-cols-4 gap-2">
               <button
                 v-for="amount in FUND_OPTIONS"
@@ -450,10 +452,10 @@ function next() {
               </button>
               <label class="flex h-16 flex-col justify-center rounded-lg border px-4 transition" :class="customFund ? 'border-bo-text bg-bo-bg' : 'border-bo-line'">
                 <span class="text-xs text-bo-muted">Custom</span>
-                <span class="flex items-center font-mono text-xl font-bold">$<input v-model.number="customFund" type="number" min="10" :max="MAX_FUND" class="ml-0.5 w-full bg-transparent outline-none" placeholder="500" aria-label="Custom amount" /></span>
+                <span class="flex items-center font-mono text-xl font-bold">$<input v-model.number="customFund" type="number" min="20" :max="MAX_FUND" class="ml-0.5 w-full bg-transparent outline-none" placeholder="500" aria-label="Custom amount" /></span>
               </label>
             </div>
-            <p v-if="customFund && (customFund < 10 || customFund > MAX_FUND)" class="mt-2 text-sm font-semibold text-red-600">Pick between $10 and ${{ MAX_FUND }}.</p>
+            <p v-if="customFund && (customFund < MIN_FUND || customFund > MAX_FUND)" class="mt-2 text-sm font-semibold text-red-600">Pick between ${{ MIN_FUND }} and ${{ MAX_FUND }}.</p>
           </div>
           <div>
             <p class="font-semibold">Pay with</p>

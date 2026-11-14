@@ -9,9 +9,11 @@ const env = process.env;
 const supabaseOrigin = new URL(env.PUBLIC_SUPABASE_URL ?? 'http://localhost:54321').origin;
 const nearAuthOrigin = `https://${env.PUBLIC_NEAR_AUTH_DOMAIN ?? 'login.testnet.fast-auth.com'}`;
 const rpcOrigin = new URL(env.PUBLIC_NEAR_RPC_URL ?? 'https://test.rpc.fastnear.com').origin;
+const fallbackRpcOrigin = new URL(env.PUBLIC_NEAR_FALLBACK_RPC_URL ?? 'https://near-testnet.drpc.org').origin;
 const connectSources = [
   "'self'",
   rpcOrigin,
+  fallbackRpcOrigin,
   supabaseOrigin,
   supabaseOrigin.replace(/^http/, 'ws'),
   'https://nominatim.openstreetmap.org',
@@ -49,7 +51,7 @@ export default defineConfig({
     schema: {
       SPONSOR_ACCOUNT_ID: secret(),
       SPONSOR_PRIVATE_KEY: secret(),
-      SPONSOR_AMOUNT_NEAR: envField.string({ context: 'server', access: 'public', default: '0.05' }),
+      SPONSOR_AMOUNT_NEAR: envField.string({ context: 'server', access: 'public', default: '0.01' }),
       MERCHANT_START_NEAR: envField.string({ context: 'server', access: 'public', default: '0.5' }),
       DEMO_MERCHANT_ACCOUNT_ID: secret(),
       DEMO_MERCHANT_PRIVATE_KEY: secret(),

@@ -24,7 +24,7 @@ export async function findConnectedAccount(slug: string, code: string, wallet: B
   const { connectedAccountId } = await lookupPairing(slug, code, true);
   if (!connectedAccountId) return null;
   try {
-    await provider.viewAccessKey({ accountId: connectedAccountId, publicKey: wallet.publicKey, finality: 'final' });
+    await provider.viewAccessKey({ accountId: connectedAccountId, publicKey: wallet.publicKey });
     return connectedAccountId;
   } catch {
     return null;

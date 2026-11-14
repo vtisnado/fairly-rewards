@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { DEMO_SLUG, cardCode, cardNumberOn, desktop, joinAsCustomer, openCardDetail, phone } from './helpers';
+import { DEMO_SLUG, cardCode, desktop, joinAsCustomer, openCardDetail, phone } from './helpers';
 
 test.afterEach(async ({ browser }) => {
   await Promise.all(browser.contexts().map((context) => context.close()));

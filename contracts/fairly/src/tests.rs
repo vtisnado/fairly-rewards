@@ -390,6 +390,63 @@ fn test_pass_005_metadata() {
 }
 
 #[test]
+fn test_pass_005_art_base_url_update_changes_media() {
+    let mut contract = setup();
+    let token_id = issue_to(&mut contract, &maria());
+    call_as(&account("fairly"), NearToken::from_yoctonear(0), START_NS);
+    contract.set_art_base_url("https://fairly.pages.dev/".into());
+    assert_eq!(contract.get_config().1, "https://fairly.pages.dev/");
+    assert!(get_logs()
+        .iter()
+        .any(|log| log.contains("\"event\":\"art_base_url_updated\"")));
+    let metadata = contract.nft_token(token_id).unwrap().metadata.unwrap();
+    assert_eq!(
+        metadata.media.unwrap(),
+        "https://fairly.pages.dev/api/art/cafe-esquina/0.svg"
+    );
+}
+
+#[test]
+fn test_pass_005_art_base_url_accepts_localhost() {
+    let mut contract = setup();
+    call_as(&account("fairly"), NearToken::from_yoctonear(0), START_NS);
+    contract.set_art_base_url("http://localhost:3000".into());
+    assert_eq!(contract.get_config().1, "http://localhost:3000");
+}
+
+#[test]
+#[should_panic(expected = "NOT_OWNER")]
+fn test_pass_005_art_base_url_owner_only() {
+    let mut contract = setup();
+    as_user(&merchant());
+    contract.set_art_base_url("https://fairly.pages.dev".into());
+}
+
+#[test]
+#[should_panic(expected = "INVALID_URL")]
+fn test_pass_005_art_base_url_rejects_plain_http() {
+    let mut contract = setup();
+    call_as(&account("fairly"), NearToken::from_yoctonear(0), START_NS);
+    contract.set_art_base_url("http://fairly.example".into());
+}
+
+#[test]
+#[should_panic(expected = "INVALID_URL")]
+fn test_pass_005_art_base_url_rejects_localhost_lookalike() {
+    let mut contract = setup();
+    call_as(&account("fairly"), NearToken::from_yoctonear(0), START_NS);
+    contract.set_art_base_url("http://localhost.evil.com".into());
+}
+
+#[test]
+#[should_panic(expected = "INVALID_URL")]
+fn test_pass_005_art_base_url_rejects_too_long() {
+    let mut contract = setup();
+    call_as(&account("fairly"), NearToken::from_yoctonear(0), START_NS);
+    contract.set_art_base_url(format!("https://{}.example", "a".repeat(200)));
+}
+
+#[test]
 fn test_pass_006_007_tier_up_on_third_purchase() {
     let mut contract = setup();
     fund(&mut contract, 10 * ONE_TUSDC);

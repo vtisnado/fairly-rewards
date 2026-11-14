@@ -643,6 +643,7 @@ onBeforeUnmount(() => {
                 <template v-if="welcome === pass.program_slug">New</template>
                 <template v-else>
                   <AppIcon name="star" class="size-3" :style="{ color: TIER_COLORS[pass.tier_index] ?? '#FFC23D' }" />{{ formatMoney(pass.balance) }}
+                  <span v-if="pass.pending !== '0'" class="font-semibold text-sun" data-testid="stack-pending">+{{ formatMoney(pass.pending) }} pending</span>
                 </template>
               </span>
             </div>

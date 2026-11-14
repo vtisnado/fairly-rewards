@@ -1,0 +1,58 @@
+#!/bin/sh
+set -u
+
+base="${1:?usage: scripts/smoke <base_url> [--skip-csp]}"
+base="${base%/}"
+skip_csp=0
+[ "${2:-}" = "--skip-csp" ] && skip_csp=1
+case "${base}" in
+  http://localhost*|http://127.0.0.1*|http://host.docker.internal*) skip_csp=1 ;;
+esac
+contract="${PUBLIC_FAIRLY_CONTRACT:?missing in .env}"
+slug="${PUBLIC_DEMO_PROGRAM_SLUG:-cafe-esquina}"
+rpc="${PUBLIC_NEAR_RPC_URL:-https://test.rpc.fastnear.com}"
+failures=0
+
+report() {
+  if [ "$1" = ok ]; then
+    printf 'ok    %s\n' "$2"
+  else
+    printf 'FAIL  %s\n' "$2"
+    failures=$((failures + 1))
+  fi
+}
+
+check_status() {
+  status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "${base}$1")
+  if [ "${status}" = "200" ]; then report ok "GET $1"; else report fail "GET $1 -> ${status}"; fi
+}
+
+check_status /
+check_status /wallet
+check_status /market
+check_status /sitemap.xml
+check_status /robots.txt
+check_status /sw.js
+check_status /manifest/wallet.webmanifest
+check_status "/api/art/${slug}/0.svg"
+
+manifest_type=$(curl -s --max-time 20 "${base}/manifest/wallet.webmanifest" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).start_url?"valid":"invalid")}catch{console.log("invalid")}})')
+if [ "${manifest_type}" = "valid" ]; then report ok "manifest parses with start_url"; else report fail "manifest parses with start_url"; fi
+
+args=$(printf '{"slug":"%s"}' "${slug}" | base64 | tr -d '\n')
+request=$(printf '{"jsonrpc":"2.0","id":"smoke","method":"query","params":{"request_type":"call_function","finality":"final","account_id":"%s","method_name":"get_program","args_base64":"%s"}}' "${contract}" "${args}")
+program=$(curl -s --max-time 20 -H 'Content-Type: application/json' -d "${request}" "${rpc}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const r=JSON.parse(s).result.result;const p=JSON.parse(Buffer.from(r).toString());console.log(p.slug)}catch{console.log("")}})')
+if [ "${program}" = "${slug}" ]; then report ok "RPC get_program(${slug}) on ${contract}"; else report fail "RPC get_program(${slug}) on ${contract}"; fi
+
+if [ "${skip_csp}" = 1 ]; then
+  printf 'skip  content security policy\n'
+else
+  page=$(curl -s -D - --max-time 20 "${base}/wallet")
+  if printf '%s' "${page}" | grep -qi 'content-security-policy'; then report ok "content security policy present"; else report fail "content security policy present"; fi
+fi
+
+if [ "${failures}" -gt 0 ]; then
+  printf '%s check(s) failed\n' "${failures}"
+  exit 1
+fi
+printf 'all checks passed\n'

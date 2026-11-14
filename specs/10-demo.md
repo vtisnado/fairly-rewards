@@ -4,7 +4,7 @@
 - **DEMO-001** `scripts/seed` MUST create program `cafe-esquina` ("Corner Café", MCC 5814): 5% cashback, tiers Bronze(0)/Silver(3)/Gold(6) with perks, royalty 5%, expiry 90 days, daily cap 100 tUSDC per location, location "Downtown", the demo cashier, and a pool of 50 tUSDC. A 5-minute expiry MAY be set with `set_expiry_seconds` only while recording the video.
 - **DEMO-002** Seed MUST create cashier `demo-cashier` and two customers (Maria, Juan) with passes and some history.
 - **DEMO-003** The landing page MUST offer "Try as merchant / cashier / customer" using demo accounts so judges need no wallet.
-- **DEMO-004** `scripts/smoke` MUST run the full flow end-to-end on testnet (create → fund → issue → 3 purchases → tier up → redeem → list → buy → sweep) and exit non-zero on any failure.
+- **DEMO-004** `scripts/smoke <base_url>` MUST check that the landing, `/wallet`, `/market`, `/sitemap.xml`, `/robots.txt`, `/sw.js`, a web manifest and a card art route answer 200, that the `fairly` contract answers `get_program` for the demo slug over RPC, and (except on localhost) that a content security policy is present; it MUST exit non-zero on any failure. The full create → fund → issue → purchase → redeem → resale flow is covered by the browser E2E suite.
 
 - **DEMO-005** On the demo program only, the customer code screen MUST offer a "Simulate a purchase" button that calls `POST /api/demo/purchase`, which records the purchase with the demo cashier key. It is labeled as a demo and rate-limited.
 

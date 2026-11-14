@@ -1,6 +1,7 @@
 use crate::errors::*;
 use crate::events;
 use crate::models::*;
+use crate::validation::validate_art_base_url;
 use crate::{Fairly, FairlyExt};
 use near_contract_standards::non_fungible_token::events::NftMint;
 use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
@@ -35,6 +36,19 @@ impl Pass {
 
 #[near]
 impl Fairly {
+    pub fn set_art_base_url(&mut self, art_base_url: String) {
+        require!(
+            env::predecessor_account_id() == env::current_account_id(),
+            NOT_OWNER
+        );
+        validate_art_base_url(&art_base_url);
+        let previous = std::mem::replace(&mut self.art_base_url, art_base_url.clone());
+        events::emit(
+            "art_base_url_updated",
+            json!({ "previous": previous, "art_base_url": art_base_url }),
+        );
+    }
+
     pub fn issue_pass(&mut self, slug: String, owner: AccountId) -> TokenId {
         let initial_usage = env::storage_usage();
         let mut program = self.program(&slug);

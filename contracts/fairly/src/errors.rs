@@ -41,3 +41,4 @@ pub const ALREADY_HAS_PROGRAM: &str = "ALREADY_HAS_PROGRAM";
 pub const INVALID_TIMEZONE: &str = "INVALID_TIMEZONE";
 pub const NOT_MANAGER: &str = "NOT_MANAGER";
 pub const TOO_MANY_MANAGERS: &str = "TOO_MANY_MANAGERS";
+pub const INVALID_URL: &str = "INVALID_URL";

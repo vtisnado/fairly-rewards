@@ -266,7 +266,7 @@ async function confirm() {
       ? `Card reached ${tierName}`
       : `${newOwner.value ? 'New card created' : 'Added to the card'}${category.value ? ` · ${category.value}` : ''}`;
     if (BigInt(result.pending) > 0n) {
-      doneSubtitle.value += ` · ${formatMoney(result.pending)} pending top-up`;
+      doneSubtitle.value += ` · ${formatMoney(result.pending)} pending until the shop settles`;
     }
     step.value = 'done';
   } catch (cause) {
@@ -309,13 +309,17 @@ async function loadWaitingCodes() {
     }));
 }
 
+async function refreshProgram() {
+  program.value = (await getProgram(program.value.slug)) ?? program.value;
+}
+
 async function onEvent(event: FairlyEvent) {
   if (event.event === 'redeem' || event.event === 'perk_claimed') {
     loadWaitingCodes().catch(() => undefined);
     return;
   }
   if (['purchase', 'pool_funded', 'pending_settled', 'cashier_added', 'cashier_removed'].includes(event.event)) {
-    program.value = (await getProgram(program.value.slug)) ?? program.value;
+    await refreshProgram();
   }
   if (event.event === 'pass_issued' || event.event === 'purchase') {
     loadRecentCards().catch(() => undefined);
@@ -339,7 +343,10 @@ onMounted(async () => {
       column: 'program_slug',
       value: program.value.slug,
       onInsert: (event) => onEvent(event).catch(() => undefined),
-      onState: (state) => (connection.value = state),
+      onState: (state) => {
+        connection.value = state;
+        if (state === 'live') refreshProgram().catch(() => undefined);
+      },
     }),
     subscribeToInserts<HonoredCodeRow>({
       table: 'honored_codes',
@@ -505,8 +512,8 @@ function closeGuide() {
             </span>
             <div class="flex-1">
               <p class="font-bold">{{ newOwner ? 'New member' : `Card ${cardCodeOf(pass?.token_id ?? '')}` }}</p>
-              <p class="text-xs text-white/50">
-                {{ newOwner ? 'The card is created with this purchase' : `${pass?.purchase_count} visits · ${pass?.tier_name} · ${formatMoney(pass?.balance ?? '0')}` }}
+              <p class="text-xs text-white/50" data-testid="counter-balances">
+                {{ newOwner ? 'The card is created with this purchase' : `${pass?.purchase_count} visits · ${pass?.tier_name} · Available ${formatMoney(pass?.balance ?? '0')} · Pending ${formatMoney(pass?.pending ?? '0')}` }}
               </p>
             </div>
             <button class="h-9 rounded-lg bg-white/10 px-3 text-xs font-semibold transition hover:bg-white/20" @click="reset">Cancel</button>

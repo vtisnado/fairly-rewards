@@ -11,6 +11,7 @@ pub const MAX_MANAGERS: usize = 10;
 pub const MIN_UTC_OFFSET_MINUTES: i16 = -720;
 pub const MAX_UTC_OFFSET_MINUTES: i16 = 840;
 pub const MAX_TIERS: usize = 5;
+pub const MAX_ART_BASE_URL_LEN: usize = 200;
 pub const MAX_PURCHASE_CENTS: u64 = 100_000;
 pub const MAX_EXPIRY_DAYS: u32 = 365;
 pub const NANOS_PER_SECOND: u64 = 1_000_000_000;

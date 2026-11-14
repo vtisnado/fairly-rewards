@@ -41,13 +41,35 @@ The `dev` image ships Rust (stable, `wasm32-unknown-unknown`), cargo-near 0.23, 
 | Build contracts | `docker compose run --rm dev sh -c "cd contracts/fairly && cargo near build non-reproducible-wasm"` |
 | Test contracts | `docker compose run --rm dev sh -c "cd contracts && cargo test"` |
 | Deploy contracts to testnet | `docker compose run --rm dev ./scripts/deploy` |
+| Type-check the web app and E2E specs | `docker compose run --rm dev pnpm -C app check` |
 | Install web dependencies | `docker compose run --rm dev pnpm -C app install` |
 | Web app dev server | `docker compose run --rm --service-ports dev pnpm -C app dev` → http://localhost:3000 |
 | API (Workers) dev server | port 8787 |
 | Seed demo data | `docker compose run --rm dev ./scripts/seed` |
 | Start local Supabase (Postgres, Realtime, Studio at http://localhost:54323) | `docker compose run --rm supabase start` |
 | Stop local Supabase | `docker compose run --rm supabase stop` |
-| End-to-end smoke | `docker compose run --rm dev ./scripts/smoke` |
+| Update the NFT art base URL (contract account only) | `docker compose run --rm dev ./scripts/set-art-url https://<hosted app origin>` |
+| Smoke test a running app | see below |
+
+## Type checks
+`pnpm -C app check` runs `astro check` (with TypeScript 6, the version `@astrojs/check` supports) over Astro, Vue and TypeScript files including `app/e2e`. It runs non-interactively and must report 0 errors, 0 warnings and 0 hints.
+
+## README screenshots
+With the dev server running and a funded sponsor: `docker compose run --rm --entrypoint node e2e /workspace/scripts/capture-screenshots.mjs` writes `docs/screenshots/*.png`. Compress them afterwards with ImageMagick in the dev image.
+
+## Smoke test
+`scripts/smoke <base_url> [--skip-csp]` checks that the landing, `/wallet`, `/market`, `/sitemap.xml`, `/robots.txt`, `/sw.js`, the wallet manifest and a card art route return 200, that the manifest parses, that the `fairly` contract answers `get_program` for the demo slug over RPC, and that the content security policy is present. The policy check is skipped automatically for localhost URLs and with `--skip-csp`. It exits non-zero when any check fails.
+
+For the local dev server, run it on the host network so `localhost` reaches it:
+
+```sh
+docker run --rm --network host --env-file .env -v "$PWD":/workspace -w /workspace fairly-dev ./scripts/smoke http://localhost:3000
+```
+
+For the hosted app: `docker compose run --rm dev ./scripts/smoke https://<hosted app origin>`.
+
+## Updating the art URL
+`scripts/set-art-url <url>` calls `set_art_base_url` on the contract signed by the contract account (key in the `near-credentials` volume). Existing cards pick up the new `media` URL immediately. `scripts/deploy` upgrades the code in place without touching state when the contract is already initialized.
 
 ## Testnet accounts
 Created with the faucet from inside the container:
@@ -85,4 +107,4 @@ docker run --rm --network host -v "$PWD":/workspace -w /workspace/app fairly-dev
 docker compose run --rm -e E2E_BASE_URL=http://localhost:8790 e2e test
 ```
 
-Reports land in `app/e2e-report/`. The tests create real testnet accounts paid by the sponsor, so run them with a funded sponsor account.
+Reports land in `app/e2e-report/`. The tests create real testnet accounts paid by the sponsor and spend about 5 NEAR per full run, so run them with a funded sponsor account. A preflight (`app/e2e/global-setup.ts`) stops the run with a clear message when the sponsor holds less than 6 NEAR (override with `E2E_MIN_SPONSOR_NEAR` when running a single spec) or when the demo program is out of storage balance; top the program up with `deposit_storage` signed by the demo merchant. Run the suite alone: parallel runs share the sponsor key and the in-memory rate limits.

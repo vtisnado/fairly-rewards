@@ -97,3 +97,15 @@ pub fn validate_category(category: Option<&str>) {
         require!((1..=32).contains(&length), INVALID_CATEGORY);
     }
 }
+
+pub fn validate_art_base_url(url: &str) {
+    let local = url
+        .strip_prefix("http://localhost")
+        .is_some_and(|rest| rest.is_empty() || rest.starts_with(':') || rest.starts_with('/'));
+    let scheme_ok = url.starts_with("https://") || local;
+    let no_whitespace = !url.chars().any(char::is_whitespace);
+    require!(
+        scheme_ok && no_whitespace && url.len() <= MAX_ART_BASE_URL_LEN,
+        INVALID_URL
+    );
+}

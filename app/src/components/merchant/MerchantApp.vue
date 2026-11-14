@@ -48,9 +48,11 @@ import {
   overview,
   periodBetween,
   previousPeriod,
+  oldestPendingAt,
   purchasesOf,
   resalesOf,
   runway,
+  SETTLEMENT_DAYS,
   type RangeDays,
 } from '../../lib/merchant-stats';
 import { programEvents, subscribeToEvents, type ConnectionState, type FairlyEvent } from '../../lib/realtime';
@@ -86,7 +88,7 @@ const TIPS = {
     'Your share each time one of your cards is resold on the market. It is paid to you automatically, apart from the cashback you give.',
   pool: 'Money you set aside for cashback. Each purchase moves a small part of it onto the customer card. You can add or withdraw it at any time.',
   pending:
-    'Cashback earned while the pool was empty. It lands on the cards automatically after you add money, so customers never lose it.',
+    'Cashback earned above your pool. It waits on the cards as Pending and becomes Available automatically when you settle, so customers never lose it.',
   held: 'Cashback already on customer cards that has not been spent yet. Customers can use it at your counter.',
   return: 'Member sales for every $1.00 of cashback given. Higher means each dollar of cashback brings more sales.',
 };
@@ -128,6 +130,7 @@ const search = ref('');
 const connection = ref<ConnectionState>('connecting');
 const loading = ref(true);
 const funding = ref(false);
+const settling = ref(false);
 const freshIds = ref(new Set<number>());
 let unsubscribe = () => {};
 
@@ -150,6 +153,16 @@ const filterLabel = computed(() => (locationFilter.value ? locationName(location
 const pool = computed(() => Number(program.value.pool_balance));
 const perDay = computed(() => dailyCashback(purchases.value));
 const poolRunway = computed(() => runway(pool.value, perDay.value));
+const pendingTotal = computed(() => BigInt(program.value.pending_total));
+const pendingSince = computed(() => {
+  if (pendingTotal.value === 0n) return null;
+  const tokens = new Set(passes.value.filter((pass) => pass.pending !== '0').map((pass) => pass.token_id));
+  return oldestPendingAt(events.value, tokens);
+});
+const pendingDays = computed(() => (pendingSince.value === null ? 0 : Math.floor((Date.now() - pendingSince.value) / 86_400_000)));
+const settlementOverdue = computed(() => pendingTotal.value > 0n && pendingDays.value >= SETTLEMENT_DAYS);
+const pendingCards = computed(() => passes.value.filter((pass) => pass.pending !== '0').length);
+const canSettle = computed(() => isOwner.value || props.isDemo);
 const runwayColor = computed(() => ({ ok: '#1F9D6B', low: '#D97706', empty: '#DC2626' })[poolRunway.value.level]);
 const returnOnCashback = computed(() =>
   stats.value.cashback > 0 ? stats.value.salesCents / 100 / (stats.value.cashback / 1_000_000) : 0,
@@ -232,7 +245,7 @@ function historyEntry(event: FairlyEvent): HistoryEntry | null {
     case 'tier_up':
       return { id: event.id, at, title: `Reached ${String(data.tier_name)}`, detail: 'New level', amount: '', positive: true };
     case 'pending_settled':
-      return { id: event.id, at, title: 'Pending cashback landed', detail: 'After a pool top-up', amount: `+${money(data.amount)}`, positive: true };
+      return { id: event.id, at, title: 'Pending cashback landed', detail: 'After settlement', amount: `+${money(data.amount)}`, positive: true };
     case 'sale':
       return { id: event.id, at, title: 'Card resold', detail: `Your royalty ${money(data.royalty)}`, amount: money(data.price), positive: true };
     case 'pass_issued':
@@ -621,6 +634,14 @@ async function fund(dollars: number) {
   funding.value = false;
 }
 
+async function settleNow() {
+  const total = program.value.pending_total;
+  if (settling.value || BigInt(total) === 0n) return;
+  settling.value = true;
+  await runAction(() => actions.value.settle(total), `Settled ${formatMoney(total)}. Pending cashback is now available on the cards`);
+  settling.value = false;
+}
+
 function printJoin() {
   window.print();
 }
@@ -738,7 +759,7 @@ onBeforeUnmount(() => {
         <p class="flex-1 text-sm">
           <b>{{ poolRunway.level === 'empty' ? 'The cashback pool is empty.' : `The cashback pool runs out in about ${poolRunway.days} days.` }}</b>
           <span class="text-white/85">
-            {{ poolRunway.level === 'empty' ? ' Purchases still count, but cashback waits as pending until you add money.' : ' Add money so customers keep earning without a pause.' }}
+            {{ poolRunway.level === 'empty' ? ' Purchases still count, but cashback waits as pending until you settle.' : ' Add money so customers keep earning without a pause.' }}
           </span>
         </p>
         <button class="h-9 rounded-lg bg-white px-4 text-sm font-bold text-red-700 transition hover:bg-red-50" @click="view = 'funds'">Add money</button>
@@ -786,6 +807,31 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="space-y-5 p-8">
+          <div
+            v-if="pendingTotal > 0n"
+            class="flex flex-wrap items-center gap-4 rounded-xl border p-5"
+            :class="settlementOverdue ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50'"
+            data-testid="pending-to-settle"
+          >
+            <div class="flex-1">
+              <p class="flex items-center gap-1 text-sm font-semibold text-bo-muted">Pending to settle <InfoTip title="Pending to settle" :text="TIPS.pending" align="left" /></p>
+              <p class="mt-1 font-mono text-4xl font-extrabold" data-testid="pending-amount">{{ formatMoney(program.pending_total) }}</p>
+              <p class="mt-1 text-sm" :class="settlementOverdue ? 'font-semibold text-red-700' : 'text-bo-muted'" data-testid="settlement-status">
+                <template v-if="settlementOverdue">Weekly settlement overdue: some cashback has waited {{ pendingDays }} days. Settle now so customers can use it.</template>
+                <template v-else>Waiting on {{ pendingCards || 'some' }} {{ pendingCards === 1 ? 'card' : 'cards' }}. Settle weekly to make it available to customers.</template>
+              </p>
+            </div>
+            <button
+              v-if="canSettle"
+              class="h-11 rounded-lg px-5 font-semibold transition hover:brightness-95 disabled:opacity-40"
+              :style="{ background: brand, color: brandInk }"
+              :disabled="settling"
+              data-testid="settle-now"
+              @click="settleNow"
+            >
+              {{ settling ? 'Settling…' : `Settle now · ${formatMoney(program.pending_total)}` }}
+            </button>
+          </div>
           <div class="grid gap-5 xl:grid-cols-[1.5fr_1fr]">
             <div class="rounded-xl border border-bo-line bg-white p-6">
               <div class="flex items-start justify-between">
@@ -989,9 +1035,14 @@ onBeforeUnmount(() => {
           <div class="rounded-xl border bg-white p-6" :class="poolRunway.level === 'ok' ? 'border-bo-line' : 'border-red-300'">
             <p class="flex items-center gap-1 text-sm font-semibold text-bo-muted">Available for cashback <InfoTip title="Cashback pool" :text="TIPS.pool" align="left" /></p>
             <p class="mt-2 font-mono text-6xl font-extrabold" :style="{ color: poolRunway.level === 'ok' ? undefined : runwayColor }">{{ formatMoney(program.pool_balance) }}</p>
-            <p v-if="Number(program.pending_total) > 0" class="mt-2 flex items-center gap-1 text-sm font-semibold text-amber-700">
-              {{ formatMoney(program.pending_total) }} pending on cards <InfoTip title="Pending cashback" :text="TIPS.pending" align="left" />
-            </p>
+            <div v-if="pendingTotal > 0n" class="mt-2 flex flex-wrap items-center gap-3">
+              <p class="flex items-center gap-1 text-sm font-semibold text-amber-700">
+                {{ formatMoney(program.pending_total) }} pending on cards <InfoTip title="Pending cashback" :text="TIPS.pending" align="left" />
+              </p>
+              <button v-if="canSettle" class="h-9 rounded-lg border border-bo-line px-4 text-sm font-semibold transition hover:bg-bo-bg disabled:opacity-40" :disabled="settling" @click="settleNow">
+                {{ settling ? 'Settling…' : 'Settle now' }}
+              </button>
+            </div>
             <div class="mt-6">
               <div class="flex justify-between text-sm">
                 <span class="font-semibold">Runway</span>
@@ -1017,6 +1068,7 @@ onBeforeUnmount(() => {
                 </button>
               </div>
               <p class="mt-2 text-xs text-bo-muted">The testnet faucet mints test dollars and moves them into the pool.</p>
+              <p class="mt-1 text-xs text-bo-muted">Start small: cashback above your pool waits as Pending until your weekly settlement.</p>
             </div>
             <div v-if="isOwner" class="mt-6 border-t border-bo-line pt-5">
               <p class="text-sm font-semibold">Withdraw</p>
@@ -1041,7 +1093,7 @@ onBeforeUnmount(() => {
               </li>
               <li class="flex gap-3">
                 <span class="grid size-7 shrink-0 place-items-center rounded-full bg-red-600 font-bold text-white">2</span>
-                <div><p class="font-semibold">Empty</p><p class="text-bo-muted">Purchases still count for visits and levels. Cashback is saved as pending and lands on cards automatically after the next top-up. Customers see "Cashback pending", never an error.</p></div>
+                <div><p class="font-semibold">Empty</p><p class="text-bo-muted">Purchases still count for visits and levels. Cashback is saved as Pending on the cards and becomes Available automatically when you settle. Customers see "Pending", never an error.</p></div>
               </li>
             </ol>
           </div>

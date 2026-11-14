@@ -86,7 +86,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 export async function linkEmail(wallet: BrowserWallet, kind: RecoveryKind): Promise<LinkedIdentity> {
   const { sub, email } = await signIn('signup');
   const publicKey = await derivedPublicKey(sub);
-  const keys = await provider.viewAccessKeyList({ accountId: wallet.accountId, finality: 'final' });
+  const keys = await provider.viewAccessKeyList({ accountId: wallet.accountId });
   if (!keys.keys.some((entry) => entry.public_key === publicKey)) {
     await relay(wallet, wallet.accountId, [actions.addFullAccessKey(PublicKey.from(publicKey))]);
   }
@@ -114,7 +114,7 @@ export async function startRecovery(kind: RecoveryKind, storageName: string): Pr
   const accountId = body.accountId;
 
   const { wallet, keep } = await pendingWalletFor(accountId);
-  const accessKey = await provider.viewAccessKey({ accountId, publicKey: recoveryKey, finality: 'final' });
+  const accessKey = await provider.viewAccessKey({ accountId, publicKey: recoveryKey });
   const block = await provider.viewBlock({ finality: 'final' });
   const transaction = createTransaction(
     accountId,
@@ -137,6 +137,7 @@ export async function startRecovery(kind: RecoveryKind, storageName: string): Pr
         },
       });
       const token = await client().getTokenSilently({ authorizationParams: { audience: SIGNING_AUDIENCE } });
+      if (!token) throw new Error('NEAR_AUTH_SIGNATURE_FAILED');
       const signPayload = tokenClaims(token).fatxn;
       if (!Array.isArray(signPayload)) throw new Error('NEAR_AUTH_SIGNATURE_FAILED');
       const { signature } = await post<{ signature: number[] }>('/api/near-auth/sign', {

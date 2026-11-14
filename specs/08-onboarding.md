@@ -3,7 +3,7 @@
 ## Requirements
 - **ONB-001** A first-time customer opening `/join/<slug>` MUST get an account without installing a wallet: the browser generates an ed25519 key pair and derives the implicit account id (D-011).
 - **ONB-002** The key pair MUST be stored in browser storage and exportable as a recovery phrase/file from the customer screen.
-- **ONB-003** `POST /api/sponsor` MUST fund a new implicit account with a small amount of testnet NEAR (default 0.05) and register it on `tusdc`. It MUST rate-limit by IP and refuse accounts that already exist.
+- **ONB-003** `POST /api/sponsor` MUST fund a new implicit account with a small amount of testnet NEAR (default 0.01, D-045) and register it on `tusdc`. The amount MUST cover the account record plus at least four full-access keys (browser, recovery, NEAR Auth, home screen shortcut) with margin. It MUST rate-limit by IP and refuse accounts that already exist.
 - **ONB-004** The sponsor private key MUST come from environment variables only.
 - **ONB-005** *(superseded by WAL-005 and WAL-010)* After onboarding the wallet shows a rotating code, not the account id, and the cashier issues the pass from it.
 - **ONB-006** Merchants and cashiers MUST sign in with NEAR Wallet Selector (testnet), e.g. MyNearWallet or Meteor.

@@ -85,7 +85,7 @@ function supportsWebCryptoEd25519(): Promise<boolean> {
 function toWallet(stored: StoredKey): BrowserWallet {
   const publicKey = new PublicKey({ keyType: KeyType.ED25519, data: stored.publicKey });
   const sign = stored.privateKey
-    ? async (bytes: Uint8Array) => new Uint8Array(await crypto.subtle.sign(ED25519, stored.privateKey!, bytes))
+    ? async (bytes: Uint8Array) => new Uint8Array(await crypto.subtle.sign(ED25519, stored.privateKey!, new Uint8Array(bytes)))
     : async (bytes: Uint8Array) => KeyPair.fromString(stored.secretKey!).sign(bytes).signature;
   return { accountId: stored.accountId ?? keyToImplicitAddress(publicKey), publicKey, signer: new BrowserSigner(publicKey, sign), protectedKey: !!stored.privateKey };
 }
@@ -164,7 +164,7 @@ export const backupText = (label: string, accountId: string, secretKey: string) 
 export async function waitForAccount(wallet: BrowserWallet, attempts = 20): Promise<void> {
   for (let attempt = 0; attempt < attempts; attempt++) {
     try {
-      await provider.viewAccessKey({ accountId: wallet.accountId, publicKey: wallet.publicKey, finality: 'final' });
+      await provider.viewAccessKey({ accountId: wallet.accountId, publicKey: wallet.publicKey });
       return;
     } catch {
       await new Promise((resolve) => setTimeout(resolve, 750));

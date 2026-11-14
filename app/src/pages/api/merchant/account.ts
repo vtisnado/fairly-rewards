@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { nearToYocto } from 'near-api-js';
+import { nearAmount } from '../../../lib/near-amount';
 import { IMPLICIT_ACCOUNT, accountExists } from '../../../lib/server/accounts';
 import { clientKey, isRateLimited } from '../../../lib/server/rate-limit';
 import { contractErrorCode, failure, json } from '../../../lib/server/responses';
@@ -17,7 +18,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (isRateLimited(clientKey(request, 'merchant-account'), 3, 60 * 60 * 1000)) {
       return failure('RATE_LIMITED', 429);
     }
-    await sponsorAccount().transfer({ receiverId: accountId, amount: nearToYocto(merchantStartNear) });
+    await sponsorAccount().transfer({ receiverId: accountId, amount: nearToYocto(nearAmount(merchantStartNear)) });
     return json({ accountId, funded: true });
   } catch (error) {
     return failure(contractErrorCode(error), 502);

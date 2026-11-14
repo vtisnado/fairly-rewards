@@ -9,7 +9,7 @@ const PUBLIC_KEY = /^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 async function hasFullAccessKey(accountId: string, publicKey: string): Promise<boolean> {
   try {
-    const key = await provider.viewAccessKey({ accountId, publicKey, finality: 'final' });
+    const key = await provider.viewAccessKey({ accountId, publicKey });
     return key.permission === 'FullAccess';
   } catch {
     return false;

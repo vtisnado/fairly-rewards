@@ -39,6 +39,7 @@ const currentTier = computed(() => tiers.value[tierIndex.value]!);
 const nextTier = computed(() => tiers.value[tierIndex.value + 1] ?? null);
 const balance = computed(() => baseUnitsToDollars(props.pass.balance));
 const pending = computed(() => baseUnitsToDollars(props.pass.pending));
+const sellBlocked = computed(() => pending.value > 0 && !props.pass.listing_price);
 const royaltyShare = computed(() => props.program.royalty_bps / 10_000);
 const progress = computed(() => {
   if (!nextTier.value) return 1;
@@ -88,6 +89,7 @@ async function claim(index: number) {
 }
 
 async function sell() {
+  if (sellBlocked.value) return;
   await run(() => listPass(props.wallet, props.pass.token_id, dollarsToBaseUnits(price.value)), 'list your card');
   sheet.value = 'listed';
 }
@@ -126,9 +128,19 @@ watch(sheet, (value) => {
 <template>
   <p class="ei text-center text-xs font-semibold text-ink/50" style="--i: 1">{{ program.name }} · No. {{ cardNumberOf(pass) }}</p>
 
-  <div v-if="pending > 0" class="ei mt-2 rounded-xl2 bg-sun-soft px-4 py-3 text-sm" style="--i: 1">
-    <b>Cashback pending: {{ formatMoney(pass.pending) }}</b> · it lands on your card as soon as {{ program.name }} tops up.
+  <div class="ei mt-2 grid grid-cols-2 gap-2" style="--i: 1">
+    <div class="rounded-xl2 bg-white px-4 py-3 shadow-soft" data-testid="card-available">
+      <p class="text-xs font-semibold text-ink/55">Available</p>
+      <p class="text-2xl font-extrabold">{{ formatMoney(pass.balance) }}</p>
+    </div>
+    <div class="rounded-xl2 px-4 py-3" :class="pending > 0 ? 'bg-sun-soft' : 'bg-ink/5'" data-testid="card-pending">
+      <p class="text-xs font-semibold text-ink/55">Pending</p>
+      <p class="text-2xl font-extrabold">{{ formatMoney(pass.pending) }}</p>
+    </div>
   </div>
+  <p v-if="pending > 0" class="ei mt-2 rounded-xl2 bg-sun-soft px-4 py-3 text-sm" style="--i: 1" data-testid="card-pending-note">
+    <b>Pending · confirms when the shop settles.</b> {{ program.name }} settles weekly and this cashback then becomes available to use.
+  </p>
   <div v-if="pass.listing_price" class="ei mt-2 rounded-xl2 bg-lilac-soft px-4 py-3 text-sm" style="--i: 1">
     <b>Listed for {{ formatMoney(pass.listing_price) }}</b> · <button class="font-semibold underline" @click="sheet = 'listed'">manage</button>
   </div>
@@ -164,7 +176,7 @@ watch(sheet, (value) => {
       <span class="grid size-8 place-items-center rounded-full bg-ink text-sun"><AppIcon name="tag" class="size-4" /></span>
       <p class="mt-3 text-sm leading-tight font-bold">Use balance</p>
     </button>
-    <button class="rounded-xl2 bg-lilac p-3 text-left" @click="sheet = pass.listing_price ? 'listed' : 'sell'">
+    <button class="rounded-xl2 bg-lilac p-3 text-left disabled:opacity-50" :disabled="sellBlocked" data-testid="sell-card" @click="sheet = pass.listing_price ? 'listed' : 'sell'">
       <span class="grid size-8 place-items-center rounded-full bg-ink text-lilac"><AppIcon name="arrow" class="size-4 -rotate-45" /></span>
       <p class="mt-3 text-sm leading-tight font-bold">Sell this card</p>
     </button>
@@ -174,7 +186,10 @@ watch(sheet, (value) => {
     </button>
   </div>
 
-  <p class="ei mt-2 rounded-xl2 bg-lilac-soft p-4 text-sm" style="--i: 2">
+  <p v-if="sellBlocked" class="ei mt-2 rounded-xl2 bg-ink/5 p-4 text-sm" style="--i: 2" data-testid="sell-blocked">
+    <b>Selling is paused while cashback is pending.</b> It opens again once {{ program.name }} settles and the {{ formatMoney(pass.pending) }} becomes available.
+  </p>
+  <p v-else class="ei mt-2 rounded-xl2 bg-lilac-soft p-4 text-sm" style="--i: 2">
     <b>Selling moves only this card</b> and the {{ formatMoney(pass.balance) }} inside it.
     {{ otherCards > 0 ? `Your other ${otherCards} ${otherCards === 1 ? 'card stays' : 'cards stay'} here.` : '' }}
     {{ program.name }} gets {{ formatPercent(program.royalty_bps) }} of the price.

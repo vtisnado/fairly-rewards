@@ -7,6 +7,8 @@ Read this file first, then `TASKS.md`, then the spec you are implementing.
 1. **Specs first.** Behavior lives in `specs/`. Do not implement anything that has no requirement id. If behavior must change, edit the spec first, then code. Reference requirement ids in test names (`test_buy_003_cashback_amount`) and in commit messages, never in code comments.
 2. **Docker only.** Never install anything on the host. Every command runs through `docker compose run --rm dev <cmd>` (see `DEVELOPMENT.md`). If a tool is missing, add it to `docker/Dockerfile`.
 3. **Testnet only.** Never deploy to mainnet, sign mainnet transactions or spend real funds.
+   - **Every asset movement needs human confirmation first**, on any network (testnet, devnet, sandbox): transfers, storage deposits, faucet requests, pool funding or withdrawals done by hand or by a script outside the test suite. State the amount, the source and the destination, then wait for a yes.
+   - **Every long command has a timeout.** Test runs, builds, deploys and scripts run with an explicit time limit so a stuck step fails fast instead of blocking.
 4. **No secrets in git.** Keys go in `.env` (ignored). Update `.env.example` with names only.
 5. **Human confirmation required** before: making the repo public, posting anywhere, submitting to the hackathon API.
    - **Agents never push.** Only the human pushes.

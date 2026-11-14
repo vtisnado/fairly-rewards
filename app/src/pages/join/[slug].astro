@@ -4,7 +4,14 @@ import JoinApp from '../../components/wallet/JoinApp.vue';
 import { getProgram } from '../../lib/near';
 import { manifestUrl } from '../../lib/manifest';
 
-const program = Astro.params.slug ? await getProgram(Astro.params.slug).catch(() => null) : null;
+let program = null;
+if (Astro.params.slug) {
+  try {
+    program = await getProgram(Astro.params.slug);
+  } catch {
+    return new Response('The network is busy. Try again in a moment.', { status: 503, headers: { 'retry-after': '5' } });
+  }
+}
 if (!program) {
   return Astro.redirect('/404');
 }

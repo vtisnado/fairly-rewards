@@ -61,6 +61,21 @@ export function purchasesOf(events: FairlyEvent[]): Purchase[] {
     .sort((a, b) => a.at - b.at);
 }
 
+export const SETTLEMENT_DAYS = 7;
+
+export function oldestPendingAt(events: FairlyEvent[], pendingTokens: Set<string>): number | null {
+  const settledAt = new Map<string, number>();
+  for (const event of events) {
+    if (event.event === 'pending_settled' && event.token_id) {
+      settledAt.set(event.token_id, Math.max(settledAt.get(event.token_id) ?? 0, timeOf(event)));
+    }
+  }
+  const times = purchasesOf(events)
+    .filter((purchase) => purchase.pending > 0 && pendingTokens.has(purchase.tokenId) && purchase.at > (settledAt.get(purchase.tokenId) ?? 0))
+    .map((purchase) => purchase.at);
+  return times.length ? Math.min(...times) : null;
+}
+
 export function resalesOf(events: FairlyEvent[]): Resale[] {
   return events
     .filter((event) => event.event === 'sale' && event.token_id)

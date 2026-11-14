@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+: "${PUBLIC_FAIRLY_CONTRACT:?missing in .env}"
+network="${NEAR_NETWORK:-testnet}"
+url="${1:?usage: scripts/set-art-url <https url>}"
+
+near contract call-function as-transaction "${PUBLIC_FAIRLY_CONTRACT}" set_art_base_url \
+  json-args "{\"art_base_url\":\"${url}\"}" \
+  prepaid-gas '30 Tgas' attached-deposit '0 NEAR' \
+  sign-as "${PUBLIC_FAIRLY_CONTRACT}" network-config "${network}" sign-with-legacy-keychain send
+near contract call-function as-read-only "${PUBLIC_FAIRLY_CONTRACT}" get_config json-args '{}' \
+  network-config "${network}" now
